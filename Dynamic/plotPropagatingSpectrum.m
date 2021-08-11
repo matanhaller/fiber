@@ -5,15 +5,15 @@ close all;
 clear;
 clc;
 
-N = -6:6;
+N = -10:10;
 epsilon = [2, 3, 4, 6, 8, 12];
 x0 = 0; y0 = 1.5; z0 = 0;
 beta = 0.49;
 
-M = 200;
+M = 1e3;
 rho = 1.5;
 kz = linspace(1e-4, 0.75, M);
-omegas = linspace(0.01, 3, M);
+omegas = linspace(0.01, 6, M);
 W = zeros(numel(epsilon), numel(omegas));
 
 %% Plotting spectrum for different permittivities
@@ -58,6 +58,7 @@ for j=1:numel(betas)
     beta = betas(j);
     disp(beta);
     for n=N
+        disp(n);
         for i=1:numel(omegas)
             omega = omegas(i);
             kRange = linspace(1e-4, omega, M+1); kRange(end) = [];
@@ -79,7 +80,7 @@ toc
 
 %% Integrating over spectrum for different harmonics
 epsilon = 12;
-N = -6:6;
+N = -10:10;
 betaC = 1 / sqrt(epsilon);
 gbC = betaC / sqrt(1 - betaC^2);
 gb = [0.5, 1, 2, 4] * gbC; 
@@ -93,6 +94,7 @@ for j=1:numel(betas)
     disp(beta);
     for k=1:numel(N)
         n = N(k);
+        disp(n);
         W = zeros(1, numel(omegas));
         for i=1:numel(omegas)
             omega = omegas(i);

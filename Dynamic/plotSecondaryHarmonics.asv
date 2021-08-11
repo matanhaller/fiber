@@ -54,7 +54,11 @@ for n=-2:2
             - 1*eta0HphiPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
         eta0HrhoFourier = 1*eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
             - 1*eta0HrhoPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
-
+<<<<<<< HEAD
+    
+=======
+        
+>>>>>>> 7e050e21c611d1540f70542259ad0492aebe088f
         EzFFT = fftshift(fft2(fftshift(EzFourier))) * dkz * domega;
         EphiFFT = fftshift(fft2(fftshift(EphiFourier))) * dkz * domega;
         ErhoFFT = fftshift(fft2(fftshift(ErhoFourier))) * dkz * domega;
@@ -62,6 +66,22 @@ for n=-2:2
         eta0HphiFFT = fftshift(fft2(fftshift(eta0HphiFourier))) * dkz * domega;
         eta0HrhoFFT = fftshift(fft2(fftshift(eta0HrhoFourier))) * dkz * domega;
         
+<<<<<<< HEAD
+%         EzTotal(i) = EzTotal(i) + EzFFT(5, 5);
+%         EphiTotal(i) = EphiTotal(i) + EphiFFT(5, 5);
+%         ErhoTotal(i) = ErhoTotal(i) + ErhoFFT(5, 5);
+%         eta0HzTotal(i) = eta0HzTotal(i) + eta0HzFFT(5, 5);
+%         eta0HphiTotal(i) = eta0HphiTotal(i) + eta0HphiFFT(5, 5);
+%         eta0HrhoTotal(i) = eta0HrhoTotal(i) + eta0HrhoFFT(5, 5);
+        
+        EzTotal(i) = EzTotal(i) + sum(sum(EzFourier)) * dkz * domega;
+        EphiTotal(i) = EphiTotal(i) + sum(sum(EphiFourier)) * dkz * domega;
+        ErhoTotal(i) = ErhoTotal(i) + sum(sum(ErhoFourier)) * dkz * domega;
+        eta0HzTotal(i) = eta0HzTotal(i) + sum(sum(eta0HzFourier)) * dkz * domega;
+        eta0HphiTotal(i) = eta0HphiTotal(i) + sum(sum(eta0HphiFourier)) * dkz * domega;
+        eta0HrhoTotal(i) = eta0HrhoTotal(i) + sum(sum(eta0HrhoFourier)) * dkz * domega;
+
+=======
         EzTotal(i) = EzTotal(i) + EzFFT(23, 20);
         EphiTotal(i) = EphiTotal(i) + EphiFFT(23, 20);
         ErhoTotal(i) = ErhoTotal(i) + ErhoFFT(23, 20);
@@ -76,6 +96,7 @@ for n=-2:2
         % eta0HphiTotal(i) = eta0HphiTotal(i) + sum(sum(eta0HphiFourier)) * dkz * domega;
         % eta0HrhoTotal(i) = eta0HrhoTotal(i) + sum(sum(eta0HrhoFourier)) * dkz * domega;
         
+>>>>>>> 7e050e21c611d1540f70542259ad0492aebe088f
         disp(rho);
     end
     EzInv = EzInv + exp(-1j*n*phi)'*EzTotal;
