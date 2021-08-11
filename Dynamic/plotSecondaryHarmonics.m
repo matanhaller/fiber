@@ -8,11 +8,11 @@ epsilon = 2;
 x0 = 0; y0 = 1.4; z0 = 1;
 beta = 0.25;
 
-M = 40;
-rhos = linspace(1e-3, 0.95, M);
+M = 80;
+rhos = linspace(1e-3, 3, M);
 phi = linspace(-pi, pi, 100);
-kz = linspace(-6.1, 6.1, 40);
-omega = linspace(-4.1, 4.1, 40);
+kz = linspace(-4, 4, 10);
+omega = linspace(-2, 2, 10);
 [K, W] = meshgrid(kz, omega);
 
 dkz = kz(2) - kz(1);
@@ -28,7 +28,7 @@ eta0HzInv = zeros(size(R));
 eta0HphiInv = zeros(size(R));
 eta0HrhoInv = zeros(size(R));
 
-for n=-2:2
+for n=0
     EzTotal = zeros(1, numel(rhos));
     EphiTotal = zeros(1, numel(rhos));
     ErhoTotal = zeros(1, numel(rhos));
@@ -40,18 +40,32 @@ for n=-2:2
         rho = rhos(i);
         [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon);
         EzFourier = 1*EzSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            + 1*EzPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(rho - 1);
+            - 1*EzPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
         EphiFourier = 1*EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            + 1*EphiPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(rho - 1);
+            - 1*EphiPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
         ErhoFourier = 1*ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            + 1*ErhoPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(rho - 1);
+            - 1*ErhoPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
         eta0HzFourier = 1*eta0HzSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            + 1*eta0HzPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(rho - 1);
+            - 1*eta0HzPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
         eta0HphiFourier = 1*eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            + 1*eta0HphiPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(rho - 1);
+            - 1*eta0HphiPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
         eta0HrhoFourier = 1*eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            + 1*eta0HrhoPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(rho - 1);
-
+            - 1*eta0HrhoPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
+    
+        EzFFT = fftshift(fft2(fftshift(EzFourier))) * dkz * domega;
+        EphiFFT = fftshift(fft2(fftshift(EphiFourier))) * dkz * domega;
+        ErhoFFT = fftshift(fft2(fftshift(ErhoFourier))) * dkz * domega;
+        eta0HzFFT = fftshift(fft2(fftshift(eta0HzFourier))) * dkz * domega;
+        eta0HphiFFT = fftshift(fft2(fftshift(eta0HphiFourier))) * dkz * domega;
+        eta0HrhoFFT = fftshift(fft2(fftshift(eta0HrhoFourier))) * dkz * domega;
+        
+%         EzTotal(i) = EzTotal(i) + EzFFT(5, 5);
+%         EphiTotal(i) = EphiTotal(i) + EphiFFT(5, 5);
+%         ErhoTotal(i) = ErhoTotal(i) + ErhoFFT(5, 5);
+%         eta0HzTotal(i) = eta0HzTotal(i) + eta0HzFFT(5, 5);
+%         eta0HphiTotal(i) = eta0HphiTotal(i) + eta0HphiFFT(5, 5);
+%         eta0HrhoTotal(i) = eta0HrhoTotal(i) + eta0HrhoFFT(5, 5);
+        
         EzTotal(i) = EzTotal(i) + sum(sum(EzFourier)) * dkz * domega;
         EphiTotal(i) = EphiTotal(i) + sum(sum(EphiFourier)) * dkz * domega;
         ErhoTotal(i) = ErhoTotal(i) + sum(sum(ErhoFourier)) * dkz * domega;
