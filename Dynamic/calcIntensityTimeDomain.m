@@ -1,28 +1,30 @@
-% Calculating intesntiy in the time domain and saving workspace.
+% Calculating intensity in the time domain and saving workspace.
 
 % Clearing workspace
 close all;
 clear;
 clc;
 
-epsilon = 2;
-x0 = 0; y0 = 1.4; z0 = 0;
+epsilon = 12;
+x0 = 0; y0 = 1.5; z0 = 0;
 beta = 0.8;
 
 M = 120;
-rhos = linspace(1e-3, 3, M);
-kz = linspace(-8, 8, 40);
-omega = linspace(-8.0001, 8.0001, 40);
+rhos = linspace(1e-3, 5, M);
+kz = linspace(-10, 10, 200);
+omega = 2.252;
+% omega = linspace(-10.0001, 10.0001, 200);
 [K, W] = meshgrid(kz, omega);
 
 dkz = kz(2) - kz(1);
-domega = omega(2) - omega(1);
+% domega = omega(2) - omega(1);
+domega = 1;
 
 z = linspace(-pi/dkz, pi/dkz, numel(kz)+1); z(end) = [];
 t = linspace(-pi/domega, pi/domega, numel(omega)+1); t(end) = [];
 
 tic
-for n=-2:2
+for n=-10:10
     disp(n);
     
     EzTotal = zeros(numel(omega), numel(kz), numel(rhos));

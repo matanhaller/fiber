@@ -9,8 +9,8 @@ M = 10;
 x0 = 0; y0 = logspace(log10(1.02), 1, M); z0 = 0;
 beta = 0.1;
 
-kz = linspace(-2, 2, 10);
-omega = linspace(-0.5, 0.5, 10);
+kz = linspace(-1, 1, 40);
+omega = linspace(-1.0001, 1.0001, 40);
 [K, W] = meshgrid(kz, omega);
 N = -10:10;
 
