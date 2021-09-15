@@ -7,12 +7,21 @@ function EzFourier = EzPrimaryFourier(rho, n, kz, omega, x0, y0, z0, beta)
     
     C = -1j*kz / (2*pi) .* exp(1j*(pi/2)*n)  .* (beta * hypot).^(-1) .* ...
         exp(1j*kz*z0 + 1j*(omega/beta)*x0 - hypot*abs(y0));
+       
+    nuVec = -40:40; nuVec = reshape(nuVec, 1, [], numel(nuVec));
+    nuMat = ones(size(omega));
+    nuMat = repmat(nuMat, 1, 1, numel(nuVec)).* nuVec;
+    W = repmat(omega, 1, 1, numel(nuVec));
+    H = repmat(hypot, 1, 1, numel(nuVec));
     
-    besselSum = 0;
-    nuMax = 40;
-    for nu=(-nuMax:nuMax)
-        besselSum = besselSum + besselj(nu, (omega/beta) .* rho) .* besseli(-n-nu, hypot.*rho);
-    end
+    besselSum = besselj(nuMat, (W/beta) .* rho) .* besseli(-n-nuMat, H.*rho);
+    besselSum = sum(besselSum, 3);
     
+%     nuMax = 40;
+%     besselSum = 0;
+%     for nu=(-nuMax:nuMax)
+%         besselSum = besselSum + besselj(nu, (omega/beta) .* rho) .* besseli(-n-nu, hypot.*rho);
+%     end
+
     EzFourier = C .* besselSum;
 end
