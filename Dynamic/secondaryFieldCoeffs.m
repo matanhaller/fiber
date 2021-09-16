@@ -2,8 +2,8 @@
 
 function [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y0, z0, beta, epsilon)
     % Dispersion relation wavevectors
-    kVac = sqrt(kz.^2 - omega.^2);    
-    kCyl = sqrt(kz.^2 - epsilon * omega.^2);
+    kVac = sqrt(kz.^2 - omega.^2); kVac = real(kVac) + 1j*sign(omega).*imag(kVac);    
+    kCyl = sqrt(kz.^2 - epsilon * omega.^2); kCyl = real(kCyl) + 1j*sign(omega).*imag(kCyl);
     
     % Primary fields
     Ep = EzPrimaryFourier(1, n, kz, omega, x0, y0, z0, beta);
