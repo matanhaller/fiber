@@ -8,6 +8,7 @@ clc;
 epsilon = 2;
 x0 = 0; y0 = 1.4; z0 = 0;
 beta = 0.8;
+nuMax = 40;
 
 M = 120;
 rhos = linspace(1e-3, 5, M);
@@ -34,23 +35,37 @@ for n=1
     eta0HphiTotal = zeros(numel(omega), numel(kz),numel(rhos));
     eta0HrhoTotal = zeros(numel(omega), numel(kz), numel(rhos));
     
-    [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon);
+    [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax);
+    
     for i=1:numel(rhos)
         rho = rhos(i);
         
-        EzFourier = EzSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            - EzPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
-        EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            - EphiPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
-        ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            - ErhoPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
-        eta0HzFourier = eta0HzSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            - eta0HzPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
-        eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            - eta0HphiPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
-        eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
-            - eta0HrhoPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
+        bs = besselSum(rho, n, K, W, beta, nuMax);
+        bsDeriv = besselSumDeriv(rho, n, K, W, beta, nuMax);
+
+        EzFourierP = EzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs);
+        EzFourierDerivP = EzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv);
+        eta0HzFourierP = eta0HzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs);
+        eta0HzFourierDerivP = eta0HzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv);
+        EphiFourierP = EphiPrimaryFourier(rho, n, K, W, EzFourierP, eta0HzFourierDerivP);
+        ErhoFourierP = ErhoPrimaryFourier(rho, n, K, W, EzFourierDerivP, eta0HzFourierP);
+        eta0HphiFourierP = eta0HphiPrimaryFourier(rho, n, K, W, EzFourierDerivP, eta0HzFourierP);
+        eta0HrhoFourierP = eta0HrhoPrimaryFourier(rho, n, K, W, EzFourierP, eta0HzFourierDerivP);
+    
+        EzFourierS = EzSecondaryFourier(Ank, Bnk, rho, n, K, W, epsilon);
+        EphiFourierS = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+        ErhoFourierS = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+        eta0HzFourierS = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+        eta0HphiFourierS = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+        eta0HrhoFourierS = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
         
+        EzFourier = EzFourierS - EzFourierP * heaviside(1 - rho);
+        EphiFourier = EphiFourierS - EphiFourierP * heaviside(1 - rho);
+        ErhoFourier = ErhoFourierS - ErhoFourierP * heaviside(1 - rho);
+        eta0HzFourier = eta0HzFourierS - eta0HzFourierP * heaviside(1 - rho);
+        eta0HphiFourier = eta0HphiFourierS - eta0HphiFourierP * heaviside(1 - rho);
+        eta0HrhoFourier = eta0HrhoFourierS - eta0HrhoFourierP * heaviside(1 - rho);
+           
         EzIFFT = fftshift(fft2(fftshift(EzFourier))) * dkz * domega;
         EphiIFFT = fftshift(fft2(fftshift(EphiFourier))) * dkz * domega;
         ErhoIFFT = fftshift(fft2(fftshift(ErhoFourier))) * dkz * domega;
@@ -67,11 +82,11 @@ for n=1
         
         disp(rho);
     end
-    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/Ez_n=%d.mat', n), 'EzTotal');
-    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/Ephi_n=%d.mat', n), 'EphiTotal');
-    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/Erho_n=%d.mat', n), 'ErhoTotal');
-    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/eta0Hz_n=%d.mat', n), 'eta0HzTotal');
-    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/eta0Hphi_n=%d.mat', n), 'eta0HphiTotal');
-    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/eta0Hrho_n=%d.mat', n), 'eta0HrhoTotal');
+    save(sprintf('Time Domain/Ez_n=%d.mat', n), 'EzTotal');
+    save(sprintf('Time Domain/Ephi_n=%d.mat', n), 'EphiTotal');
+    save(sprintf('Time Domain/Erho_n=%d.mat', n), 'ErhoTotal');
+    save(sprintf('Time Domain/eta0Hz_n=%d.mat', n), 'eta0HzTotal');
+    save(sprintf('Time Domain/eta0Hphi_n=%d.mat', n), 'eta0HphiTotal');
+    save(sprintf('Time Domain/eta0Hrho_n=%d.mat', n), 'eta0HrhoTotal');
 end
 toc
