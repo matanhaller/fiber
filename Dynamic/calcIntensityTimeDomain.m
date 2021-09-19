@@ -5,26 +5,26 @@ close all;
 clear;
 clc;
 
-epsilon = 12;
-x0 = 0; y0 = 1.5; z0 = 0;
+epsilon = 2;
+x0 = 0; y0 = 1.4; z0 = 0;
 beta = 0.8;
 
 M = 120;
 rhos = linspace(1e-3, 5, M);
 kz = linspace(-10, 10, 200);
-omega = 2.252;
-% omega = linspace(-10.0001, 10.0001, 200);
+% omega = [-2.822, 2.822];
+omega = linspace(-10.0001, 10.0001, 200);
 [K, W] = meshgrid(kz, omega);
 
 dkz = kz(2) - kz(1);
-% domega = omega(2) - omega(1);
-domega = 1;
+domega = omega(2) - omega(1);
+% domega = 1;
 
 z = linspace(-pi/dkz, pi/dkz, numel(kz)+1); z(end) = [];
 t = linspace(-pi/domega, pi/domega, numel(omega)+1); t(end) = [];
 
 tic
-for n=-10:10
+for n=1
     disp(n);
     
     EzTotal = zeros(numel(omega), numel(kz), numel(rhos));
@@ -33,10 +33,10 @@ for n=-10:10
     eta0HzTotal = zeros(numel(omega), numel(kz), numel(rhos));
     eta0HphiTotal = zeros(numel(omega), numel(kz),numel(rhos));
     eta0HrhoTotal = zeros(numel(omega), numel(kz), numel(rhos));
-
+    
+    [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon);
     for i=1:numel(rhos)
         rho = rhos(i);
-        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon);
         
         EzFourier = EzSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, x0, y0, z0, beta, epsilon) ...
             - EzPrimaryFourier(rho, n, K, W, x0, y0, z0, beta) * heaviside(1 - rho);
@@ -67,11 +67,11 @@ for n=-10:10
         
         disp(rho);
     end
-    save(sprintf('Time Domain/Ez_n=%d.mat', n), 'EzTotal');
-    save(sprintf('Time Domain/Ephi_n=%d.mat', n), 'EphiTotal');
-    save(sprintf('Time Domain/Erho_n=%d.mat', n), 'ErhoTotal');
-    save(sprintf('Time Domain/eta0Hz_n=%d.mat', n), 'eta0HzTotal');
-    save(sprintf('Time Domain/eta0Hphi_n=%d.mat', n), 'eta0HphiTotal');
-    save(sprintf('Time Domain/eta0Hrho_n=%d.mat', n), 'eta0HrhoTotal');
+    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/Ez_n=%d.mat', n), 'EzTotal');
+    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/Ephi_n=%d.mat', n), 'EphiTotal');
+    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/Erho_n=%d.mat', n), 'ErhoTotal');
+    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/eta0Hz_n=%d.mat', n), 'eta0HzTotal');
+    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/eta0Hphi_n=%d.mat', n), 'eta0HphiTotal');
+    save(sprintf('Time Domain/epsilon=2,beta=0.8,fix/eta0Hrho_n=%d.mat', n), 'eta0HrhoTotal');
 end
 toc
