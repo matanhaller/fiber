@@ -13,7 +13,7 @@ beta = 0.49;
 M = 1e3;
 rho = 1.5;
 kz = linspace(1e-4, 0.75, M);
-omegas = linspace(0.01, 6, M);
+omegas = linspace(0.01, 10, M);
 W = zeros(numel(epsilon), numel(omegas));
 
 %% Plotting spectrum for different permittivities
@@ -45,15 +45,15 @@ legend('FontSize', 14, 'Interpreter', 'latex');
 toc
 
 %% Plotting spectrum for different velocities
-epsilon = 12;
+epsilon = 4;
 betaC = 1 / sqrt(epsilon);
 gbC = betaC / sqrt(1 - betaC^2);
-gb = [0.5, 1, 2, 4] * gbC; 
+gb = [0.5, 0.9, 1.1, 2] * gbC; 
 betas = sqrt(gb.^2 ./ (gb.^2 + 1));
 W = zeros(numel(betas), numel(omegas));
 
 tic
-figure;
+figure; hold on;
 for j=1:numel(betas)
     beta = betas(j);
     disp(beta);
@@ -70,7 +70,7 @@ end
 
 for j=1:numel(betas)
     beta = betas(j);
-    semilogy(omegas, W(j, :) / max(W(j, :)), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', beta)); hold on;
+    plot(omegas, W(j, :) / max(W(j, :)), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', beta));
 end
 
 xlabel('$\omega R/c$', 'FontSize', 14, 'Interpreter', 'latex');

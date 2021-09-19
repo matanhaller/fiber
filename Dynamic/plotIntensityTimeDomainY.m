@@ -6,17 +6,18 @@ close all;
 clear;
 clc;
 
-epsilon = 12;
+epsilon = 2;
 x0 = 0; y0 = 1.4; z0 = 0;
-beta = 0.8;
+beta = 0.2;
 
 M = 120;
-rhos = linspace(1e-3, 3, M);
+rhos = linspace(1e-3, 5, M);
 phi = linspace(-pi, pi, 100);
 kz = linspace(-10, 10, 200);
+% omega = [-2.822, 2.822];
 omega = linspace(-10.0001, 10.0001, 200);
 [K, W] = meshgrid(kz, omega);
-N = -6:6;
+N = -4:4;
 
 dkz = kz(2) - kz(1);
 domega = omega(2) - omega(1);
@@ -37,25 +38,25 @@ for i=1:numel(N)
     n = N(i);
     disp(n);
     if i == 1
-        EzStructs = load(sprintf('Time Domain/epsilon=12,beta=0.8/Ez_n=%d.mat', n));
-        EphiStructs = load(sprintf('Time Domain/epsilon=12,beta=0.8/Ephi_n=%d.mat', n));
-        ErhoStructs = load(sprintf('Time Domain/epsilon=12,beta=0.8/Erho_n=%d.mat', n));
-        eta0HzStructs = load(sprintf('Time Domain/epsilon=12,beta=0.8/eta0Hz_n=%d.mat', n));
-        eta0HphiStructs = load(sprintf('Time Domain/epsilon=12,beta=0.8/eta0Hphi_n=%d.mat', n));
-        eta0HrhoStructs = load(sprintf('Time Domain/epsilon=12,beta=0.8/eta0Hrho_n=%d.mat', n));
+        EzStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ez_n=%d.mat', n));
+        EphiStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ephi_n=%d.mat', n));
+        ErhoStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Erho_n=%d.mat', n));
+        eta0HzStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hz_n=%d.mat', n));
+        eta0HphiStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hphi_n=%d.mat', n));
+        eta0HrhoStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hrho_n=%d.mat', n));
     else
-        EzStructs(i) = load(sprintf('Time Domain/epsilon=12,beta=0.8/Ez_n=%d.mat', n));
-        EphiStructs(i) = load(sprintf('Time Domain/epsilon=12,beta=0.8/Ephi_n=%d.mat', n));
-        ErhoStructs(i) = load(sprintf('Time Domain/epsilon=12,beta=0.8/Erho_n=%d.mat', n));
-        eta0HzStructs(i) = load(sprintf('Time Domain/epsilon=12,beta=0.8/eta0Hz_n=%d.mat', n));
-        eta0HphiStructs(i) = load(sprintf('Time Domain/epsilon=12,beta=0.8/eta0Hphi_n=%d.mat', n));
-        eta0HrhoStructs(i) = load(sprintf('Time Domain/epsilon=12,beta=0.8/eta0Hrho_n=%d.mat', n));
+        EzStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ez_n=%d.mat', n));
+        EphiStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ephi_n=%d.mat', n));
+        ErhoStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Erho_n=%d.mat', n));
+        eta0HzStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hz_n=%d.mat', n));
+        eta0HphiStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hphi_n=%d.mat', n));
+        eta0HrhoStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hrho_n=%d.mat', n));
     end
 end
 
 %% Plotting intensity + Poynting vector
 tic
-for t=95:105
+for t=61:200
     disp(t);
     
     EzInv = zeros(size(X));
@@ -73,7 +74,7 @@ for t=95:105
 
         EphiTotal = EphiStructs(i).EphiTotal(t,:,:);
         EphiTotal = reshape(EphiTotal, numel(z), numel(rhos));
-
+        
         ErhoTotal = ErhoStructs(i).ErhoTotal(t,:,:);
         ErhoTotal = reshape(ErhoTotal, numel(z), numel(rhos));
 
@@ -106,13 +107,13 @@ for t=95:105
     end
     
     % Intensity (|E|^2 + |H|^2)
-    I = abs(EzInv).^2 + abs(EphiInv).^2 + abs(ErhoInv).^2 ...
-      + abs(eta0HzInv).^2 + abs(eta0HphiInv).^2 + abs(eta0HrhoInv).^2;
+    I = real(EzInv).^2 + real(EphiInv).^2 + real(ErhoInv).^2 ...
+      + real(eta0HzInv).^2 + real(eta0HphiInv).^2 + real(eta0HrhoInv).^2;
 
     % Poyting vector (E x H)
-    Srho = EphiInv .* conj(eta0HzInv) - EzInv .* conj(eta0HphiInv);
-    Sphi = - ErhoInv .* conj(eta0HzInv) + EzInv .* conj(eta0HrhoInv);
-    Sz = ErhoInv .* conj(eta0HphiInv) - EphiInv .* conj(eta0HrhoInv);
+    Srho = real(EphiInv) .* real(eta0HzInv) - real(EzInv) .* real(eta0HphiInv);
+    Sphi = - real(ErhoInv) .* real(eta0HzInv) + real(EzInv) .* real(eta0HrhoInv);
+    Sz = real(ErhoInv) .* real(eta0HphiInv) - real(EphiInv) .* real(eta0HrhoInv);
     
     % Converting to Cartesian coordinates
     Sx = Srho .* sign(X);
@@ -120,18 +121,18 @@ for t=95:105
     figure; hold on;
     surf(X, Z, log10(I), 'EdgeColor', 'none');
     quiver3(X(1:2:end,1:5:end), Z(1:2:end,1:5:end), 10*ones(size(X(1:2:end,1:5:end))), real(Sx(1:2:end,1:5:end)), real(Sz(1:2:end,1:5:end)), zeros(size(X(1:2:end,1:5:end))), 'w', 'LineWidth', 1);
-    %     set(gcf, 'Visible', 'off');
+        set(gcf, 'Visible', 'off');
     plot(-ones(1, numel(z)), z, '-w', 'LineWidth', 2);
     plot(ones(1, numel(z)), z, '-w', 'LineWidth', 2);
     plot(x0 + beta*(-pi/domega + t*(2*pi/(numel(omega)*domega))), 0, 'wo', 'LineWidth', 2);
     view(2);
-    xlim([-3,3]);
-    ylim([-3,3]);
+    xlim([-5,5]);
+    ylim([-5,5]);
     xlabel('$x$', 'FontSize', 14, 'Interpreter', 'latex');
     ylabel('$z$', 'FontSize', 14, 'Interpreter', 'latex');
     title(sprintf('Field Intensity: $\\varepsilon=%d$', epsilon), 'FontSize', 14, 'Interpreter', 'latex');
-    caxis([-3.5,3]);
+    caxis([-4,-0.5]);
     colorbar;
-%     saveas(gcf, sprintf('Simulation/t=%d.jpg', t));
+    saveas(gcf, sprintf('Simulation/t=%d.jpg', t));
 end
 toc
