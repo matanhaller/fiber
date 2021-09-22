@@ -88,6 +88,8 @@ end
 toc;
 
 %% Verifying Fourier transforms yield real functions
+close all;
+
 tic;
 
 for i=1:6
@@ -147,6 +149,131 @@ plot(omega, imag(eta0HphiSum), 'LineWidth', 1, 'DisplayName', 'Imaginary');
 figure(6);
 plot(omega, real(eta0HrhoSum), 'LineWidth', 1, 'DisplayName', 'Real');
 plot(omega, imag(eta0HrhoSum), 'LineWidth', 1, 'DisplayName', 'Imaginary');
+
+figure(1);
+title('Longitudinal Electric Field', 'FontSize', 14, 'Interpreter', 'latex');
+figure(2);
+title('Azimuthal Electric Field', 'FontSize', 14, 'Interpreter', 'latex');
+figure(3);
+title('Radial Electric Field', 'FontSize', 14, 'Interpreter', 'latex');
+figure(4);
+title('Longitudinal Magnetic Field', 'FontSize', 14, 'Interpreter', 'latex');
+figure(5);
+title('Azimuthal Magnetic Field', 'FontSize', 14, 'Interpreter', 'latex');
+figure(6);
+title('Radial Magnetic Field', 'FontSize', 14, 'Interpreter', 'latex');
+
+for i=1:6
+    figure(i);
+    xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
+    ylabel('Value', 'FontSize', 14, 'Interpreter', 'latex');
+    legend('FontSize', 14, 'Interpreter', 'latex');
+end
+
+toc;
+
+%% Plotting inverse transform of the primary field
+close all;
+
+N = -10:10;
+
+rhos = linspace(1e-3, 3, 120);
+phi = linspace(-pi, pi, 240);
+
+kz = linspace(-10, 10, 40);
+omega = linspace(-10.0001, 10.0001, 40);
+dkz = kz(2) - kz(1);
+domega = omega(2) - omega(1);
+[K, W] = meshgrid(kz, omega);
+
+[R, P] = meshgrid(rhos, phi);
+X = R.*cos(P); Y = R.*sin(P);
+
+Ez = zeros(size(X));
+Ephi = zeros(size(X));
+Erho = zeros(size(X));
+eta0Hz = zeros(size(X));
+eta0Hphi = zeros(size(X));
+eta0Hrho = zeros(size(X));
+
+tic;
+
+for n=N
+    disp(n);
+    
+    EzInv = zeros(1, numel(rhos));
+    EphiInv = zeros(1, numel(rhos));
+    ErhoInv = zeros(1, numel(rhos));
+    eta0HzInv = zeros(1, numel(rhos));
+    eta0HphiInv = zeros(1, numel(rhos));
+    eta0HrhoInv = zeros(1, numel(rhos));
+    
+    for i=1:numel(rhos)
+        rho = rhos(i);
+        
+        disp(rho);
+        
+        bs = besselSum(rho, n, K, W, beta, nuMax);
+        bsDeriv = besselSumDeriv(rho, n, K, W, beta, nuMax);
+
+        EzFourier = EzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs);
+        EzFourierDeriv = EzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv);
+        eta0HzFourier = eta0HzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs);
+        eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv);
+        EphiFourier = EphiPrimaryFourier(rho, n, K, W, EzFourier, eta0HzFourierDeriv);
+        ErhoFourier = ErhoPrimaryFourier(rho, n, K, W, EzFourierDeriv, eta0HzFourier);
+        eta0HphiFourier = eta0HphiPrimaryFourier(rho, n, K, W, EzFourierDeriv, eta0HzFourier);
+        eta0HrhoFourier = eta0HrhoPrimaryFourier(rho, n, K, W, EzFourier, eta0HzFourierDeriv);
+        
+        EzInv(i) = sum(sum(EzFourier)) * dkz * domega;
+        EphiInv(i) = sum(sum(EphiFourier)) * dkz * domega;
+        ErhoInv(i) = sum(sum(ErhoFourier)) * dkz * domega;
+        eta0HzInv(i) = sum(sum(eta0HzFourier)) * dkz * domega;
+        eta0HphiInv(i) = sum(sum(eta0HphiFourier)) * dkz * domega;
+        eta0HrhoInv(i) = sum(sum(eta0HrhoFourier)) * dkz * domega;
+    end
+    
+    Ez = Ez + exp(-1j*n*phi).' * EzInv;
+    Ephi = Ephi + exp(-1j*n*phi).' * EphiInv;
+    Erho = Erho + exp(-1j*n*phi).' * ErhoInv;
+    eta0Hz = eta0Hz + exp(-1j*n*phi).' * eta0HzInv;
+    eta0Hphi = eta0Hphi + exp(-1j*n*phi).' * eta0HphiInv;
+    eta0Hrho = eta0Hrho + exp(-1j*n*phi).' * eta0HrhoInv;
+end
+
+for i=1:6
+    figure(i); hold on;
+end
+
+figure(1);
+surf(X, Y, real(Ez), 'EdgeColor', 'None');
+view(2);
+colorbar;
+
+figure(2);
+surf(X, Y, real(Ephi), 'EdgeColor', 'None');
+view(2);
+colorbar;
+
+figure(3);
+surf(X, Y, real(Erho), 'EdgeColor', 'None');
+view(2);
+colorbar;
+
+figure(4);
+surf(X, Y, real(eta0Hz), 'EdgeColor', 'None');
+view(2);
+colorbar;
+
+figure(5);
+surf(X, Y, real(eta0Hphi), 'EdgeColor', 'None');
+view(2);
+colorbar;
+
+figure(6);
+surf(X, Y, real(eta0Hrho), 'EdgeColor', 'None');
+view(2);
+colorbar;
 
 figure(1);
 title('Longitudinal Electric Field', 'FontSize', 14, 'Interpreter', 'latex');
