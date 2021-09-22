@@ -11,8 +11,8 @@ beta = 0.2;
 
 % kz = logspace(-3, 1, 200); kz = [-flip(kz), kz];
 % omega = logspace(log10(1.0001e-3), log10(10.0001), 200); omega = [-flip(omega), omega];
-kz = linspace(-10, 10, 80);
-omega = linspace(-10.0001, 10.0001, 80);
+kz = linspace(-10, 10, 40);
+omega = linspace(-10.0001, 10.0001, 40);
 dkz = kz(2) - kz(1);
 domega= omega(2) - omega(1);
 [K, W] = meshgrid(kz, omega);
@@ -75,18 +75,19 @@ toc
 legend('FontSize', 14, 'Interpreter', 'latex');
 
 %% Plotting force as function of velocity
-rho = 1.5;
-M = 4;
-F = zeros(1, M);
+rho = 1.4;
 
-figure; hold on;
+figure(1); hold on;
+figure(2); hold on;
 
 tic
-for epsilon=[1.2, 2, 4, 12]
+for epsilon=1.2
     betaC = 1 / sqrt(epsilon);
     gbC = betaC / sqrt(1 - betaC^2);
-    gb = (0.2:0.2:4) * gbC; 
+    gb = (0.1:0.1:4) * gbC; 
     betas = sqrt(gb.^2 ./ (gb.^2 + 1));
+    Fr = zeros(1, numel(betas));
+    Fa = zeros(1, numel(betas));
     for i=1:numel(betas)
         beta = betas(i);
         disp(beta);
@@ -124,13 +125,22 @@ for epsilon=[1.2, 2, 4, 12]
             eta0HrhoInv = eta0HrhoInv + (-1j)^n*eta0HrhoTotal;
         end
 
-        F(i) = sqrt(real(EzInv + beta * eta0HrhoInv).^2 + real(EphiInv).^2 + real(ErhoInv - beta * eta0HzInv).^2);
+        Fr(i) = -real(ErhoInv - beta * eta0HzInv);
+        disp(real(ErhoInv));
+        disp(real(eta0HzInv));
+        Fa(i) = -real(EphiInv);
     end
-    plot(gb./gbC, F, '--o', 'LineWidth', 1, 'DisplayName', sprintf('$\\varepsilon=%.1f$', epsilon));
+    
+    figure(1);
+    plot(gb./gbC, Fr, 'LineWidth', 1, 'DisplayName', sprintf('$\\varepsilon=%.1f$', epsilon));
+    figure(2);
+    plot(gb./gbC, Fa, 'LineWidth', 1, 'DisplayName', sprintf('$\\varepsilon=%.1f$', epsilon));
 end
 toc
 
-xlabel('$\gamma \beta / (\gamma \beta)_\mathrm{C}$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$|\bar{F}|$', 'FontSize', 14, 'Interpreter', 'latex');
-legend('FontSize', 14, 'Interpreter', 'latex');
-
+for i=1:2
+    figure(i);
+    xlabel('$\gamma \beta / (\gamma \beta)_\mathrm{C}$', 'FontSize', 14, 'Interpreter', 'latex');
+    ylabel('$|\bar{F}|$', 'FontSize', 14, 'Interpreter', 'latex');
+    legend('FontSize', 14, 'Interpreter', 'latex');
+end
