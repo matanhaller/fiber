@@ -8,7 +8,7 @@ clc;
 
 epsilon = 2;
 x0 = 0; y0 = 1.4; z0 = 0;
-beta = 0.2;
+beta = 0.8;
 
 M = 120;
 rhos = linspace(1e-3, 5, M);
@@ -17,13 +17,14 @@ kz = linspace(-10, 10, 200);
 % omega = [-2.822, 2.822];
 omega = linspace(-10.0001, 10.0001, 200);
 [K, W] = meshgrid(kz, omega);
-N = -4:4;
+N = -10:10;
 
 dkz = kz(2) - kz(1);
 domega = omega(2) - omega(1);
 
 x = [-flip(rhos), rhos];
 z = linspace(-pi/dkz, pi/dkz, numel(kz)+1); z(end) = [];
+% z = z(151:250);
 [X, Z] = meshgrid(x, z);
 
 zStructs = struct([]);
@@ -38,25 +39,25 @@ for i=1:numel(N)
     n = N(i);
     disp(n);
     if i == 1
-        EzStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ez_n=%d.mat', n));
-        EphiStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ephi_n=%d.mat', n));
-        ErhoStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Erho_n=%d.mat', n));
-        eta0HzStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hz_n=%d.mat', n));
-        eta0HphiStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hphi_n=%d.mat', n));
-        eta0HrhoStructs = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hrho_n=%d.mat', n));
+        EzStructs = load(sprintf('Time Domain/epsilon=2,beta=0.8/Ez_n=%d.mat', n));
+        EphiStructs = load(sprintf('Time Domain/epsilon=2,beta=0.8/Ephi_n=%d.mat', n));
+        ErhoStructs = load(sprintf('Time Domain/epsilon=2,beta=0.8/Erho_n=%d.mat', n));
+        eta0HzStructs = load(sprintf('Time Domain/epsilon=2,beta=0.8/eta0Hz_n=%d.mat', n));
+        eta0HphiStructs = load(sprintf('Time Domain/epsilon=2,beta=0.8/eta0Hphi_n=%d.mat', n));
+        eta0HrhoStructs = load(sprintf('Time Domain/epsilon=2,beta=0.8/eta0Hrho_n=%d.mat', n));
     else
-        EzStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ez_n=%d.mat', n));
-        EphiStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Ephi_n=%d.mat', n));
-        ErhoStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/Erho_n=%d.mat', n));
-        eta0HzStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hz_n=%d.mat', n));
-        eta0HphiStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hphi_n=%d.mat', n));
-        eta0HrhoStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.2,fix/eta0Hrho_n=%d.mat', n));
+        EzStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.8/Ez_n=%d.mat', n));
+        EphiStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.8/Ephi_n=%d.mat', n));
+        ErhoStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.8/Erho_n=%d.mat', n));
+        eta0HzStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.8/eta0Hz_n=%d.mat', n));
+        eta0HphiStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.8/eta0Hphi_n=%d.mat', n));
+        eta0HrhoStructs(i) = load(sprintf('Time Domain/epsilon=2,beta=0.8/eta0Hrho_n=%d.mat', n));
     end
 end
 
 %% Plotting intensity + Poynting vector
 tic
-for t=61:200
+for t=95:2:115
     disp(t);
     
     EzInv = zeros(size(X));
@@ -116,23 +117,24 @@ for t=61:200
     Sz = real(ErhoInv) .* real(eta0HphiInv) - real(EphiInv) .* real(eta0HrhoInv);
     
     % Converting to Cartesian coordinates
-    Sx = Srho .* sign(X);
+%     Sx = Srho .* sign(X);
+    Sx = zeros(size(X));
     
     figure; hold on;
     surf(X, Z, log10(I), 'EdgeColor', 'none');
     quiver3(X(1:2:end,1:5:end), Z(1:2:end,1:5:end), 10*ones(size(X(1:2:end,1:5:end))), real(Sx(1:2:end,1:5:end)), real(Sz(1:2:end,1:5:end)), zeros(size(X(1:2:end,1:5:end))), 'w', 'LineWidth', 1);
-        set(gcf, 'Visible', 'off');
+%     set(gcf, 'Visible', 'off');
     plot(-ones(1, numel(z)), z, '-w', 'LineWidth', 2);
     plot(ones(1, numel(z)), z, '-w', 'LineWidth', 2);
     plot(x0 + beta*(-pi/domega + t*(2*pi/(numel(omega)*domega))), 0, 'wo', 'LineWidth', 2);
     view(2);
     xlim([-5,5]);
-    ylim([-5,5]);
+    ylim([-30,30]);
     xlabel('$x$', 'FontSize', 14, 'Interpreter', 'latex');
     ylabel('$z$', 'FontSize', 14, 'Interpreter', 'latex');
     title(sprintf('Field Intensity: $\\varepsilon=%d$', epsilon), 'FontSize', 14, 'Interpreter', 'latex');
-    caxis([-4,-0.5]);
+    caxis([-4,1]);
     colorbar;
-    saveas(gcf, sprintf('Simulation/t=%d.jpg', t));
+%     saveas(gcf, sprintf('Simulation/t=%d.jpg', t));
 end
 toc

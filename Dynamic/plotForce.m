@@ -7,17 +7,20 @@ clc;
 M = 10;
 
 x0 = 0; y0 = logspace(log10(1.02), 1, M); z0 = 0;
-beta = 0.2;
+beta = 0.02;
 
-% kz = logspace(-3, 1, 200); kz = [-flip(kz), kz];
-% omega = logspace(log10(1.0001e-3), log10(10.0001), 200); omega = [-flip(omega), omega];
-kz = linspace(-10, 10, 40);
-omega = linspace(-10.0001, 10.0001, 40);
+Nk = 1.6e3;
+Nw = 400;
+kz = logspace(-3, log10(50), Nk/2); kz = [-flip(kz), kz];
+omega = logspace(log10(1.0001e-3), log10(0.5001), Nw); omega = [-flip(omega), omega];
+% kz = linspace(-10, 10, 40);
+% omega = linspace(-10.0001, 10.0001, 40);
 dkz = kz(2) - kz(1);
 domega= omega(2) - omega(1);
 [K, W] = meshgrid(kz, omega);
 N = -10:10;
-nuMax = 40;
+nuMax = 100;
+sigma = 0;
 
 %% Plotting force as function of distance from cylinder
 figure; hold on;
@@ -39,7 +42,7 @@ for epsilon=1.2
         for n=N
             disp(n);
 
-            [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, rho, z0, beta, epsilon, nuMax);
+            [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, rho, z0, beta, epsilon, nuMax, sigma, 0);
             EzFourier = EzSecondaryFourier(Ank, Bnk, rho, n, K, W, epsilon);
             EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
             ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
@@ -72,6 +75,7 @@ for epsilon=1.2
 end
 toc
 
+ylim([0, 1]);
 legend('FontSize', 14, 'Interpreter', 'latex');
 
 %% Plotting force as function of velocity

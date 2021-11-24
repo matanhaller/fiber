@@ -6,28 +6,68 @@ close all;
 clear;
 clc;
 
-rho = 1.25;
-x0 = 0; y0 = 2; z0 = 0;
-kz = 2;
-omega = linspace(-10, 10, 8e3);
-beta = linspace(1e-2, 0.95, 10);
-n = -5;
-nuMax = 40;
+rho = 1;
+x0 = 0; y0 = 1.4; z0 = 0;
+kz = 0.5;
+omega = logspace(log10(1.0001e-3), log10(10.0001), 8e2); omega = [-flip(omega), omega];
+% omega = linspace(-10, 10, 200);
+beta = linspace(1e-2, 0.2, 40);
+n = 10;
+nuMax = 1e3;
+sigma = 0;
 
-%% Integrating to check relation to delta function of all fields
+%% Plotting Fourier components
+close all;
+
 tic;
 
-for i=1:4
+beta = 0.02;
+
+figure(1); hold on;
+figure(2); hold on;
+
+EzFourierSum = zeros(1, numel(omega));
+
+for n=-10:10
+    bs = besselSum(rho, n, kz, omega, beta, nuMax, 0);
+    bsDeriv = besselSumDeriv(rho, n, kz, omega, beta, nuMax, 0);    
+    EzFourier = EzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs, sigma);
+    EzFourierSum = EzFourierSum + EzFourier;
+    
+    figure(1);
+    plot(omega, abs(EzFourier), 'LineWidth', 1);
+end
+
+figure(1);
+xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('Amplitude', 'FontSize', 14, 'Interpreter', 'latex');
+
+figure(2);
+plot(omega, abs(EzFourierSum), 'LineWidth', 1);
+xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('Amplitude', 'FontSize', 14, 'Interpreter', 'latex');
+
+toc;
+
+%% Integrating to check relation to delta function of all fields
+close all;
+nuMax = 100;
+
+tic;
+
+sigma = 0;
+
+for i=1:3
     figure(i); hold on;
 end
 
-for n=0:5
+for n=0:8
     fprintf('n = %d\n', n);
     
-    EzFourierStatic = -(1/pi) * 1j*kz * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besseli(n, abs(kz)*rho);
-    EphiFourierStatic = -(1/pi) * (1j*n / rho) * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besseli(n, abs(kz)*rho);
-    ErhoFourierStatic = (1/pi) * 1j*abs(kz) * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besselip(n, abs(kz)*rho);
-    
+    EzFourierStatic = -(1/pi) * 1j*kz .* exp(1j*(pi/2)*n) .* besselk(n, abs(kz)*y0) .* besseli(n, abs(kz)*rho);
+    EphiFourierStatic = -(1/pi) * (1j*n / rho) * exp(1j*(pi/2)*n) .* besselk(n, abs(kz)*y0) .* besseli(n, abs(kz)*rho);
+    ErhoFourierStatic = (1/pi) * abs(kz) .* exp(1j*(pi/2)*n) .* besselk(n, abs(kz)*y0) .* besselip(n, abs(kz)*rho);
+
     intVecEz = zeros(1, numel(beta));
     intVecEphi = zeros(1, numel(beta));
     intVecErho = zeros(1, numel(beta));
@@ -38,13 +78,13 @@ for n=0:5
     for i=1:numel(beta)
         b = beta(i);
         
-        bs = besselSum(rho, n, kz, omega, b, nuMax);
-        bsDeriv = besselSumDeriv(rho, n, kz, omega, b, nuMax);
+        bs = besselSum(rho, n, kz, omega, b, nuMax, 0);
+        bsDeriv = besselSumDeriv(rho, n, kz, omega, b, nuMax, 0);
         
-        EzFourier = EzPrimaryFourier(n, kz, omega, x0, y0, z0, b, bs);
-        EzFourierDeriv = EzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, b, bsDeriv);
-        eta0HzFourier = eta0HzPrimaryFourier(n, kz, omega, x0, y0, z0, b, bs);
-        eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, b, bsDeriv);
+        EzFourier = EzPrimaryFourier(n, kz, omega, x0, y0, z0, b, bs, sigma);
+        EzFourierDeriv = EzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, b, bsDeriv, sigma);
+        eta0HzFourier = eta0HzPrimaryFourier(n, kz, omega, x0, y0, z0, b, bs, sigma);
+        eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, b, bsDeriv, sigma);
         EphiFourier = EphiPrimaryFourier(rho, n, kz, omega, EzFourier, eta0HzFourierDeriv);
         ErhoFourier = ErhoPrimaryFourier(rho, n, kz, omega, EzFourierDeriv, eta0HzFourier);
         eta0HphiFourier = eta0HphiPrimaryFourier(rho, n, kz, omega, EzFourierDeriv, eta0HzFourier);
@@ -59,14 +99,11 @@ for n=0:5
     end
     
     figure(1);
-    plot(beta, abs(intVecEz)./abs(EzFourierStatic), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
+    plot(beta, abs(intVecEz./EzFourierStatic), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
     figure(2);
-    plot(beta, abs(intVecEphi)./abs(EphiFourierStatic), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
+    plot(beta, abs(intVecEphi./EphiFourierStatic), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
     figure(3);
-    plot(beta, abs(intVecErho)./abs(ErhoFourierStatic), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
-    figure(4);
-    plot(beta, (abs(intVeceta0Hz).^2 + abs(intVeceta0Hphi).^2 + abs(intVeceta0Hrho).^2) ...
-        ./ (abs(intVecEz).^2 + abs(intVecEphi).^2 + abs(intVecErho).^2), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
+    plot(beta, abs(intVecErho./ErhoFourierStatic), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
 end
 
 figure(1);
@@ -75,12 +112,70 @@ figure(2);
 title('Azimuthal Electric Field', 'FontSize', 14, 'Interpreter', 'latex');
 figure(3);
 title('Radial Electric Field', 'FontSize', 14, 'Interpreter', 'latex');
-figure(4);
-title('Ratio between $E$ and $H$ Intensities', 'FontSize', 14, 'Interpreter', 'latex');
 
-for i=1:4
+for i=1:3
     figure(i);
     xlabel('$\beta$', 'FontSize', 14, 'Interpreter', 'latex');
+    ylabel('Ratio', 'FontSize', 14, 'Interpreter', 'latex');
+    legend('FontSize', 14, 'Interpreter', 'latex');
+end
+
+toc;
+
+%% Plotting ratio between electric and magnetic field intensities
+close all;
+nuMax = 40;
+beta = linspace(1e-2, 0.99, 10);
+n = 0;
+
+tic;
+
+sigma = 0;
+
+for i=1:3
+    figure(i); hold on;
+end
+
+for b=beta
+    fprintf('beta = %d\n', b);
+    
+    EzFourierStatic = -(1/pi) * 1j*kz * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besseli(n, abs(kz)*rho);
+    EphiFourierStatic = -(1/pi) * (1j*n / rho) * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besseli(n, abs(kz)*rho);
+    ErhoFourierStatic = (1/pi) * abs(kz) * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besselip(n, abs(kz)*rho);
+
+    bs = besselSum(rho, n, kz, omega, b, nuMax, 0);
+    bsDeriv = besselSumDeriv(rho, n, kz, omega, b, nuMax, 0);
+        
+    EzFourier = EzPrimaryFourier(n, kz, omega, x0, y0, z0, b, bs, sigma);
+    EzFourierDeriv = EzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, b, bsDeriv, sigma);
+    eta0HzFourier = eta0HzPrimaryFourier(n, kz, omega, x0, y0, z0, b, bs, sigma);
+    eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, b, bsDeriv, sigma);
+    EphiFourier = EphiPrimaryFourier(rho, n, kz, omega, EzFourier, eta0HzFourierDeriv);
+    ErhoFourier = ErhoPrimaryFourier(rho, n, kz, omega, EzFourierDeriv, eta0HzFourier);
+    eta0HphiFourier = eta0HphiPrimaryFourier(rho, n, kz, omega, EzFourierDeriv, eta0HzFourier);
+    eta0HrhoFourier = eta0HrhoPrimaryFourier(rho, n, kz, omega, EzFourier, eta0HzFourierDeriv);
+    
+    figure(1);
+    plot(omega, eta0HzFourier./EzFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', b));
+    figure(2);
+    plot(omega, eta0HphiFourier./EphiFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', b));
+    figure(3);
+    plot(omega, eta0HrhoFourier./ErhoFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', b));
+end
+    
+    
+
+figure(1);
+title('Longitudinal', 'FontSize', 14, 'Interpreter', 'latex');
+figure(2);
+title('Azimuthal', 'FontSize', 14, 'Interpreter', 'latex');
+figure(3);
+title('Radial', 'FontSize', 14, 'Interpreter', 'latex');
+figure(4);
+
+for i=1:3
+    figure(i);
+    xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
     ylabel('Ratio', 'FontSize', 14, 'Interpreter', 'latex');
     legend('FontSize', 14, 'Interpreter', 'latex');
 end
@@ -97,28 +192,28 @@ for i=1:6
 end
 
 beta = 0.8;
-n = 8;
+n = 2;
 kz = 0.01;
 
-bs = besselSum(rho, n, kz, omega, beta, nuMax);
-bsDeriv = besselSumDeriv(rho, n, kz, omega, beta, nuMax);
+bs = besselSum(rho, n, kz, omega, beta, nuMax, 0);
+bsDeriv = besselSumDeriv(rho, n, kz, omega, beta, nuMax, 0);
 
-bs2 = besselSum(rho, -n, -kz, -omega, beta, nuMax);
-bsDeriv2 = besselSumDeriv(rho, -n, -kz, -omega, beta, nuMax);
+bs2 = besselSum(rho, -n, -kz, -omega, beta, nuMax, 0);
+bsDeriv2 = besselSumDeriv(rho, -n, -kz, -omega, beta, nuMax, 0);
         
-EzFourier = EzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs);
-EzFourierDeriv = EzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv);
-eta0HzFourier = eta0HzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs);
-eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv);
+EzFourier = EzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs, sigma);
+EzFourierDeriv = EzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv, sigma);
+eta0HzFourier = eta0HzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs, sigma);
+eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv, sigma);
 EphiFourier = EphiPrimaryFourier(rho, n, kz, omega, EzFourier, eta0HzFourierDeriv);
 ErhoFourier = ErhoPrimaryFourier(rho, n, kz, omega, EzFourierDeriv, eta0HzFourier);
 eta0HphiFourier = eta0HphiPrimaryFourier(rho, n, kz, omega, EzFourierDeriv, eta0HzFourier);
 eta0HrhoFourier = eta0HrhoPrimaryFourier(rho, n, kz, omega, EzFourier, eta0HzFourierDeriv);
 
-EzFourier2 = EzPrimaryFourier(-n, -kz, -omega, x0, y0, z0, beta, bs2);
-EzFourierDeriv2 = EzPrimaryFourierDeriv(-n, -kz, -omega, x0, y0, z0, beta, bsDeriv2);
-eta0HzFourier2 = eta0HzPrimaryFourier(-n, -kz, -omega, x0, y0, z0, beta, bs2);
-eta0HzFourierDeriv2 = eta0HzPrimaryFourierDeriv(-n, -kz, -omega, x0, y0, z0, beta, bsDeriv2);
+EzFourier2 = EzPrimaryFourier(-n, -kz, -omega, x0, y0, z0, beta, bs2, sigma);
+EzFourierDeriv2 = EzPrimaryFourierDeriv(-n, -kz, -omega, x0, y0, z0, beta, bsDeriv2, sigma);
+eta0HzFourier2 = eta0HzPrimaryFourier(-n, -kz, -omega, x0, y0, z0, beta, bs2, sigma);
+eta0HzFourierDeriv2 = eta0HzPrimaryFourierDeriv(-n, -kz, -omega, x0, y0, z0, beta, bsDeriv2, sigma);
 EphiFourier2 = EphiPrimaryFourier(rho, -n, -kz, -omega, EzFourier2, eta0HzFourierDeriv2);
 ErhoFourier2 = ErhoPrimaryFourier(rho, -n, -kz, -omega, EzFourierDeriv2, eta0HzFourier2);
 eta0HphiFourier2 = eta0HphiPrimaryFourier(rho, -n, -kz, -omega, EzFourierDeriv2, eta0HzFourier2);
@@ -176,12 +271,16 @@ toc;
 close all;
 
 N = -10:10;
+beta = 0.8;
+x0 = 0; y0 = 1.4; z0 = 0;
+nuMax = 100;
+sigma = 0;
 
-rhos = linspace(1e-3, 3, 120);
-phi = linspace(-pi, pi, 240);
+rhos = linspace(1e-3, 1.3, 120);
+phi = linspace(-pi, pi, 241);
 
-kz = linspace(-10, 10, 40);
-omega = linspace(-10.0001, 10.0001, 40);
+kz = linspace(-10, 10, 100);
+omega = linspace(-10.0001, 10.0001, 100);
 dkz = kz(2) - kz(1);
 domega = omega(2) - omega(1);
 [K, W] = meshgrid(kz, omega);
@@ -213,13 +312,13 @@ for n=N
         
         disp(rho);
         
-        bs = besselSum(rho, n, K, W, beta, nuMax);
-        bsDeriv = besselSumDeriv(rho, n, K, W, beta, nuMax);
+        bs = besselSum(rho, n, K, W, beta, nuMax, 0);
+        bsDeriv = besselSumDeriv(rho, n, K, W, beta, nuMax, 0);
 
-        EzFourier = EzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs);
-        EzFourierDeriv = EzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv);
-        eta0HzFourier = eta0HzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs);
-        eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv);
+        EzFourier = EzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs, sigma);
+        EzFourierDeriv = EzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv, sigma);
+        eta0HzFourier = eta0HzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs, sigma);
+        eta0HzFourierDeriv = eta0HzPrimaryFourierDeriv(n, K, W, x0, y0, z0, beta, bsDeriv, sigma);
         EphiFourier = EphiPrimaryFourier(rho, n, K, W, EzFourier, eta0HzFourierDeriv);
         ErhoFourier = ErhoPrimaryFourier(rho, n, K, W, EzFourierDeriv, eta0HzFourier);
         eta0HphiFourier = eta0HphiPrimaryFourier(rho, n, K, W, EzFourierDeriv, eta0HzFourier);
@@ -292,7 +391,6 @@ for i=1:6
     figure(i);
     xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
     ylabel('Value', 'FontSize', 14, 'Interpreter', 'latex');
-    legend('FontSize', 14, 'Interpreter', 'latex');
 end
 
 toc;

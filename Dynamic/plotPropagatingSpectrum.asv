@@ -241,13 +241,13 @@ epsilon = 4;
 beta = 0.8;
 x0 = 0; y0 = 1.4; z0 = 0;
 N = -10:10;
-M = 400;
+M = 800;
 nuMax = 100;
 rhos = 40;
 omega = linspace(0.0101, 12.0001, M);
 kz = linspace(1e-2, 12, M);
 [K, W] = meshgrid(kz, omega);
-Nphi = 1e3;
+Nphi = 1e2;
 phi = linspace(-pi, pi, Nphi+1); phi(end) = [];
 sigma = 0;
 
@@ -294,5 +294,5 @@ for j=1:numel(rhos)
 end
 toc
 
-xlabel('$\phi$ [$^{\circ}$]', 'FontSize', 14, 'Interpreter', 'latex');
+xlabel('$\phi$', 'FontSize', 14, 'Interpreter', 'latex');
 ylabel('$\mathrm{d}\bar{W}/\mathrm{d}\phi$', 'FontSize', 14, 'Interpreter', 'latex');
