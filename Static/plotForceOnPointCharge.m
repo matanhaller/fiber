@@ -1,13 +1,14 @@
 % Plotting the normalized force on the point charge
 
-close all;
-clear all;
+% close all;
+% clear all;
 clc;
 
 % Plotting for different values of epsilonR
 epsilonR = [1.2, 2, 4, 12];
-eta = logspace(log10(1.02), log10(10), 100);
-N = 80;
+% eta = linspace(1.02, 10, 40);
+eta = logspace(log10(1.02), 1, 10);
+N = 10;
 K = 600;
 
 figure;
@@ -22,13 +23,14 @@ xlabel('$\eta-1$', 'FontSize', 14, 'Interpreter', 'latex');
 ylabel('$\bar{F}$', 'FontSize', 14, 'Interpreter', 'latex');
 
 % Plotting for different values of N
-epsilonR = 2;
-N = [0, 1, 2, 4, 10, 20, 40, 80];
+epsilonR = 1.2;
+N = 10;
+% N = [0, 1, 2, 4, 10, 20, 40, 80];
 
 figure; hold on;
 for n=N
     F = forceOnPointCharge(epsilonR, eta, n, K, 1e-2, 1e-3);
-    F0 = -0.25 * (er - 1) / (er + 1) * 1 ./ ((eta - 1) .^ 2);
+    F0 = -0.25 * (epsilonR - 1) / (epsilonR + 1) * 1 ./ ((eta - 1) .^ 2);
     Fnorm = -F ./ F0;
     plot(eta - 1, Fnorm, 'LineWidth', 2, 'DisplayName', sprintf('$N=%d$', n));
 end

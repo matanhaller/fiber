@@ -13,7 +13,8 @@ betaC = 1 / sqrt(epsilon);
 gbC = betaC / sqrt(1 - betaC^2);
 gb = (0.1:0.1:2) * gbC; 
 betas = sqrt(gb.^2 ./ (gb.^2 + 1));
-nuMax = 40;
+nuMax = 100;
+sigma = 0;
 
 xMax = 10;
 dx = 1e-2;
@@ -41,10 +42,10 @@ for i=1:numel(betas)
     for n=N
         disp(n);
         
-        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
         Ex = zeros(1, numel(x));
         
-        parfor m=1:numel(x)
+        for m=1:numel(x)
    
             EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho(m), n, K, W, epsilon);
             ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho(m), n, K, W, epsilon);

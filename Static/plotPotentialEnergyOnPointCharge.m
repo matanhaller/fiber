@@ -16,7 +16,7 @@ figure;
 for er=epsilonR
     W0 = potentialEnergyDielectricHalfPlane(er, eta);
     W = potentialEnergyByRangeOfEta(er, eta, N, K, 1e-3);
-    plot(eta - 1, W ./ W0, 'LineWidth', 2, 'DisplayName', sprintf('$\\varepsilon=%.1f$', er)); hold on;
+    plot(eta - 1, W, 'LineWidth', 2, 'DisplayName', sprintf('$\\varepsilon=%.1f$', er)); hold on;
 end
 
 plot(eta - 1, Winf, 'LineWidth', 2, 'DisplayName', '$\varepsilon \rightarrow \infty$');
