@@ -7,10 +7,10 @@ clc;
 
 N = -10:10;
 epsilon = 12;
-x0 = 0; y0 = 1.1; z0 = 0;
+x0 = 0; y0 = 1.4; z0 = 0;
 betaC = 1 / sqrt(epsilon);
 gbC = betaC / sqrt(1 - betaC^2);
-gb = [0.5, 0.9, 1.1, 2] * gbC; 
+gb = (0.1:0.1:2) * gbC; 
 betas = sqrt(gb.^2 ./ (gb.^2 + 1));
 nuMax = 40;
 
@@ -19,19 +19,24 @@ maxModes = 15;
 rhos = linspace(1e-3, 5, 120);
 drho = rhos(2) - rhos(1);
 omegas = repmat(linspace(1e-3, 10.0001, M), maxModes, 1);
+W = zeros(1, numel(betas));
+sigma = 0;
 
 %% Plotting for different velocities
 tic;
 
 figure;
 
-for beta=betas
+for k=1:numel(betas)
+    beta = betas(k);
+    
     spec = zeros(1, size(omegas,2));
     
-    for n=-10:10
+    for n=N
         disp(n);
         
-        ks = load(sprintf('Dispersion Curve/eps=%d,n=%d.mat', epsilon, n)).kz;
+        ks = load(sprintf('Dispersion Curve/eps=%d,n=%d.mat', epsilon, n));
+        ks = ks.kz;
         deltaDeriv = max(DeltaCylinderDeriv(n, ks, omegas, epsilon), 1e-100);
         
         [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffsTimesDelta(n, ks, omegas, x0, y0, z0, beta, epsilon, nuMax);
@@ -54,6 +59,7 @@ for beta=betas
         end
     end
     
+    W(k) = trapz(omegas(1,:), 0.5*(4*pi)^3*real(spec));
     semilogy(omegas(1,:), 0.5*(4*pi)^3*real(spec), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', beta)); hold on;
 end
 
@@ -70,21 +76,16 @@ tic;
 
 figure; hold on;
 
-epsilon = 12;
-y0 = 1.1;
-rhos = linspace(1e-3, 5, 120);
-beta = 0.96;
-N = 0:10;
-omegaFirst = [];
-
-for n=0:10
+beta = 0.8;
+    
+currNnz = 0;
+wsLoc = [];
+   
+for n=0:5
     disp(n);
         
     ks = load(sprintf('Dispersion Curve/eps=%d,n=%d.mat', epsilon, n));
     ks = ks.kz;
-    
-    currNnz = 0;
-    wsLoc = [];
         
     for m=1:size(ks,2)
         if nnz(ks(:,m)) > currNnz
@@ -95,9 +96,6 @@ for n=0:10
         
     spec = zeros(1, numel(wsLoc));
     ws = omegas(:,wsLoc);
-    if numel(ws) > 0
-        omegaFirst = [omegaFirst, ws(1,1)];
-    end
     ks = ks(:,wsLoc);
         
     deltaDeriv = max(DeltaCylinderDeriv(n, ks, ws, epsilon), 1e-100);
@@ -126,88 +124,214 @@ end
     
 toc;
 
-set(gca, 'YScale', 'log');
-xlabel('$\omega_{n,s} R/c$', 'FontSize', 14, 'Interpreter', 'latex');
+xlabel('$\omega R/c$', 'FontSize', 14, 'Interpreter', 'latex');
 ylabel('Normalized Spectrum', 'FontSize', 14, 'Interpreter', 'latex');
 legend('FontSize', 14, 'Interpreter', 'latex');
 
-figure; hold on;
-stem(0:(numel(omegaFirst)-1), omegaFirst, 'LineWidth', 1);
-xlabel('$n$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\omega_{n,1}$', 'FontSize', 14, 'Interpreter', 'latex');
-
-%% Plotting for modes of given phase velocity
+%% Calculating contribution of each harmonic
 close all;
+
+nuMax = 100;
+
+epsilon = 12;
+betaC = 1 / sqrt(epsilon);
+gbC = betaC / sqrt(1 - betaC^2);
+gb = [0.5, 0.9, 1.1, 2] * gbC; 
+betas = sqrt(gb.^2 ./ (gb.^2 + 1));
+
+W = zeros(numel(betas), numel(N));
 
 tic;
 
-figure(1); hold on;
-figure(2); hold on;
+figure;
 
-epsilon = 4;
-y0 = 1.4;
-rhos = linspace(1e-3, 5, 120);
-drho = rhos(2) - rhos(1);
-bC = 1/sqrt(epsilon);
-gbC = bC / sqrt(1 - bC^2);
-gb = 2*gbC;
-beta = gb / sqrt(gb^2 + 1);
-N = 0:10;
-M = 2.5e3;
-omega = linspace(1e-3, 50, M);
-nuMax = 360;
-
-for n=10
-    disp(n);
+for k=1:numel(betas)
+    beta = betas(k);
+      
+    for n=N
+        spec = zeros(1, size(omegas,2));
         
-    d = DeltaCylinder(n, omega/beta, omega, epsilon);
-    sp = spmak(augknt(omega,2), real(d));
-    w0 = fnzeros(sp);
-    w0 = w0(1,:);
-    k0 = w0 / beta;
-    
-    spec = zeros(1, numel(w0));
-    
-    deltaDeriv = max(DeltaCylinderDeriv(n, w0/beta, w0, epsilon), 1e-100);
-    [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffsTimesDelta(n, w0/beta, w0, x0, y0, z0, beta, epsilon, nuMax);
+        disp(n);
         
-    for i=1:numel(rhos)
-        rho = rhos(i);
+        ks = load(sprintf('Dispersion Curve/eps=%d,n=%d.mat', epsilon, n));
+        ks = ks.kz;
+        deltaDeriv = max(DeltaCylinderDeriv(n, ks, omegas, epsilon), 1e-100);
         
-        EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, w0/beta, w0, epsilon);
-        ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, w0/beta, w0, epsilon);
-        eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, w0/beta, w0, epsilon);
-        eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, w0/beta, w0, epsilon);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffsTimesDelta(n, ks, omegas, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
+        
+        for i=1:numel(rhos)
+            rho = rhos(i);
+        
+            EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
+            ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
+            eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
+            eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
             
-        EphiModes = conj(EphiFourier)./deltaDeriv;
-        ErhoModes = conj(ErhoFourier)./deltaDeriv;
-        eta0HphiModes = eta0HphiFourier./deltaDeriv;
-        eta0HrhoModes = eta0HrhoFourier./deltaDeriv;
+            EphiModes = sum(conj(EphiFourier)./deltaDeriv .* (ks > 0), 1);
+            ErhoModes = sum(conj(ErhoFourier)./deltaDeriv .* (ks > 0), 1);
+            eta0HphiModes = sum(eta0HphiFourier./deltaDeriv .* (ks > 0), 1);
+            eta0HrhoModes = sum(eta0HrhoFourier./deltaDeriv .* (ks > 0), 1);
             
-        Sz = ErhoModes .* eta0HphiModes - EphiModes .* eta0HrhoModes;
-        spec = spec + Sz * rho * drho;
+            Sz = ErhoModes .* eta0HphiModes - EphiModes .* eta0HrhoModes;
+            spec = spec + Sz * rho * drho;
+        end
+        
+        W(k,n-N(1)+1) = trapz(omegas(1,:), 0.5*(4*pi)^3*real(spec));
     end
     
-    figure(1);
-    stem(w0, 0.5*(4*pi)^3*real(spec), 'LineWidth', 1, 'DisplayName', sprintf('$n=%d$', n));
-    
-    w0lim = beta/sqrt(beta^2*epsilon-1) * (n*pi/2 + pi/4 - atan(1/epsilon ...
-        * sqrt((beta^2*epsilon-1)/(1-beta^2))) + pi * (0:1:(ceil(numel(w0)/2)-1)));
-    
-    figure(2);
-    stem(1:numel(w0), w0, 'o', 'LineWidth', 1, 'DisplayName', 'Numerical');
-    stem(1:2:numel(w0), w0lim, 'o', 'LineWidth', 1, 'DisplayName', 'Kotanjyan');
+    semilogy(N, W(k,:), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', beta)); hold on;
 end
-    
+
 toc;
 
-figure(1);
-set(gca, 'YScale', 'log');
-xlabel('$\omega_{n,s} R/c$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Normalized Spectrum', 'FontSize', 14, 'Interpreter', 'latex');
+xlabel('$n$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\bar{W}$', 'FontSize', 14, 'Interpreter', 'latex');
 legend('FontSize', 14, 'Interpreter', 'latex');
 
-figure(2);
-xlabel('$s$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\omega_{n,s}$', 'FontSize', 14, 'Interpreter', 'latex');
+%% Calculating contribution of each eigenmode
+close all;
+
+N = 0:10;
+epsilon = 12;
+beta = 0.8;
+nuMax = 40;
+
+x0 = 0; y0 = 1.4; z0 = 0;
+
+M = 2.5e3;
+maxModes = 15;
+rhos = linspace(1e-3, 5, 2.5e3);
+drho = rhos(2) - rhos(1);
+omegas = linspace(1e-3, 10.0001, M);
+W = zeros(numel(N), numel(maxModes));
+
+tic;
+
+for ni=N
+    disp(ni);
+    
+    ks = load(sprintf('Dispersion Curve/eps=%d,n=%d.mat', epsilon, ni));
+    ks = ks.kz;
+    
+    for s=1:maxModes
+        disp(s);
+        disp(nnz(ks(s,:)));
+        if nnz(ks(s,:)) == 0
+            continue;
+        end
+        spec = zeros(1, M);
+        
+        for n=[-ni,ni]
+            deltaDeriv = max(DeltaCylinderDeriv(n, ks(s,:), omegas, epsilon), 1e-100);
+            [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffsTimesDelta(n, ks(s,:), omegas, x0, y0, z0, beta, epsilon, nuMax);
+        
+            for i=1:numel(rhos)
+                rho = rhos(i);
+
+                EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks(s,:), omegas, epsilon);
+                ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks(s,:), omegas, epsilon);
+                eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks(s,:), omegas, epsilon);
+                eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks(s,:), omegas, epsilon);
+
+                EphiModes = conj(EphiFourier)./deltaDeriv .* (ks(s,:) > 0);
+                ErhoModes = conj(ErhoFourier)./deltaDeriv .* (ks(s,:) > 0);
+                eta0HphiModes = eta0HphiFourier./deltaDeriv .* (ks(s,:) > 0);
+                eta0HrhoModes = eta0HrhoFourier./deltaDeriv .* (ks(s,:) > 0);
+
+                Sz = ErhoModes .* eta0HphiModes - EphiModes .* eta0HrhoModes;
+                spec = spec + Sz * rho * drho;
+            end
+        end
+        
+        W(ni+1,s) = trapz(omegas, 0.5*(4*pi)^3*real(spec));
+    end
+    
+    if ni == 0
+        W(ni+1,:) = W(ni+1,:) / 2;
+    end
+    
+end
+
+figure; hold on;
+for s=1:6
+    plot(0:(size(W,1)-1), W(:,s), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$s=%d$', s));
+    set(gca, 'YScale', 'log');
+    xlabel('$n$', 'FontSize', 14, 'Interpreter', 'latex');
+    ylabel('$W_{n,s}$', 'FontSize', 14, 'Interpreter', 'latex');
+end
 legend('FontSize', 14, 'Interpreter', 'latex');
+
+toc;
+
+%% Calculating radiated energy as function of distance from cylinder
+close all;
+
+N = 0:10;
+epsilon = 2;
+beta = 0.8;
+nuMax = 160;
+
+x0 = 0; z0 = 0;
+y0Vec = logspace(log10(1.05), 1, 20);
+
+M = 2.5e3;
+maxModes = 15;
+rhos = linspace(1e-3, 5, 120);
+drho = rhos(2) - rhos(1);
+omegas = linspace(1e-3, 10.0001, M);
+W = zeros(1, numel(y0Vec));
+
+tic;
+
+%% Plotting for different distances from cylinder
+y0Vec = logspace(log10(1.05), 1, 40);
+epsilon = 12;
+N = -10:10;
+beta = 0.8;
+nuMax = 40;
+W = zeros(1, numel(y0Vec));
+
+tic;
+
+figure;
+
+for k=1:numel(y0Vec)
+    y0 = y0Vec(k);
+    
+    spec = zeros(1, size(omegas,2));
+    
+    for n=N
+        disp(n);
+        
+        ks = load(sprintf('Dispersion Curve/eps=%d,n=%d.mat', epsilon, n));
+        ks = ks.kz;
+        deltaDeriv = max(DeltaCylinderDeriv(n, ks, omegas, epsilon), 1e-100);
+        
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffsTimesDelta(n, ks, omegas, x0, y0, z0, beta, epsilon, nuMax);
+        
+        for i=1:numel(rhos)
+            rho = rhos(i);
+        
+            EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
+            ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
+            eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
+            eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, ks, omegas, epsilon);
+            
+            EphiModes = sum(conj(EphiFourier)./deltaDeriv .* (ks > 0), 1);
+            ErhoModes = sum(conj(ErhoFourier)./deltaDeriv .* (ks > 0), 1);
+            eta0HphiModes = sum(eta0HphiFourier./deltaDeriv .* (ks > 0), 1);
+            eta0HrhoModes = sum(eta0HrhoFourier./deltaDeriv .* (ks > 0), 1);
+            
+            Sz = ErhoModes .* eta0HphiModes - EphiModes .* eta0HrhoModes;
+            spec = spec + Sz * rho * drho;
+        end
+    end
+    
+    W(k) = trapz(omegas(1,:), 0.5*(4*pi)^3*real(spec));
+end
+
+toc;
+
+plot(y0Vec - 1, W, 'LineWidth', 1);
+xlabel('$\eta-1$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\bar{W}$', 'FontSize', 14, 'Interpreter', 'latex');

@@ -234,14 +234,128 @@ end
 
 savefig(gcf, 'spec_multiple_beta_eps_12.fig');
 
+%% Plotting for different permittivities (2nd attempt)
+% close all;
+
+epsilonVec = [2, 4, 12];
+% epsilonVec = linspace(2, 12, 40);
+x0 = 0; y0 = 1.4; z0 = 0;
+
+M = 1e2;
+omega = linspace(1e-3, 20, M);
+domega = omega(2) - omega(1);
+kz = linspace(1e-3, 20, M);
+[K, W] = meshgrid(kz, omega);
+spec = zeros(numel(epsilonVec), numel(omega));
+nuMax = 100;
+sigma = 0;
+eps = 1e-6;
+
+rho = 400;
+
+tic
+
+for j=1:numel(epsilonVec)
+    epsilon = epsilonVec(j);
+    disp(j);
+  
+    beta = 0.8;
+
+    for n=-20:20
+        disp(n);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0, eps);
+
+        specInt = (abs(Bnk).^2 + abs(eta0Dnk).^2) ./ (W.^2 - K.^2 + eps) .* (abs(W) > abs(K));
+        specInt(isnan(specInt)) = 0;
+        spec(j,:) = spec(j,:) + omega .* trapz(kz, specInt, 2).';
+    end
+end
+
+spec = 0.5 * (2*pi)^3 * real(spec);
+% spec = medfilt1(spec, 3, [], 2);
+
+figure; hold on;
+
+for j=1:size(spec,1)
+    plot(omega, spec(j,:), 'LineWidth', 1);
+end
+
+toc
+
+% set(gca, 'YScale', 'log');
+xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('Normalized spectrum', 'FontSize', 14, 'Interpreter', 'latex');
+
 %% Plotting angular contribution
 close all;
 
-epsilon = 4;
+epsilon = 2;
 beta = 0.8;
-x0 = 0; y0 = 1.4; z0 = 0;
-N = -10:10;
+x0 = 0; y0 = 1.05; z0 = 0;
+N = -20:20;
 M = 400;
+nuMax = 100;
+rhos = 40;
+omega = linspace(0.0101, 20.0001, M);
+kz = linspace(1e-2, 20, M);
+[K, W] = meshgrid(kz, omega);
+Nphi = 1e3;
+phi = linspace(-pi, pi, Nphi+1); phi(end) = [];
+sigma = 0;
+
+tic
+figure; hold on;
+for j=1:numel(rhos)
+    rho = rhos(j);
+%     disp(rho);
+
+    EzFourier = zeros(numel(kz), numel(omega), numel(N));
+    EphiFourier = zeros(numel(kz), numel(omega), numel(N));
+    eta0HzFourier = zeros(numel(kz), numel(omega), numel(N));
+    eta0HphiFourier = zeros(numel(kz), numel(omega), numel(N));
+    
+    for k=1:numel(N)
+        n = N(k);
+        disp(n);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
+        EzFourier(:,:,k) = EzSecondaryFourier(Ank, Bnk, rho, n, K, W, epsilon);
+        EphiFourier(:,:,k) = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+        eta0HzFourier(:,:,k) = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+        eta0HphiFourier(:,:,k) = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+    end
+
+    EzFourier = fftshift(fft(EzFourier, Nphi, 3), 3);
+    EphiFourier = fftshift(fft(EphiFourier, Nphi, 3), 3);
+    eta0HzFourier = fftshift(fft(eta0HzFourier, Nphi, 3), 3);
+    eta0HphiFourier = fftshift(fft(eta0HphiFourier, Nphi, 3), 3);
+    
+    S = conj(EphiFourier) .* eta0HzFourier - conj(EzFourier) .* eta0HphiFourier;
+    for k=1:numel(N)
+        S(:,:,k) = tril(S(:,:,k));
+    end
+
+    Wphi = 4*pi*rho * trapz(omega, trapz(kz, S, 2), 1);
+    Wphi = Wphi(:);
+
+    disp(max(abs(real(Wphi))));
+    disp(max(abs(imag(Wphi))));
+
+    plot(phi * (180/pi), real(Wphi), 'LineWidth', 1);
+end
+toc
+
+xlim([-180, 180]);
+xlabel('$\phi$ [$^{\circ}$]', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\mathrm{d}\bar{W}/\mathrm{d}\phi$', 'FontSize', 14, 'Interpreter', 'latex');
+
+%% Plotting angle-frequency spectrum
+close all;
+
+epsilon = 2;
+beta = 0.99;
+x0 = 0; y0 = 1.05; z0 = 0;
+N = -20:20;
+M = 100;
 nuMax = 100;
 rhos = 40;
 omega = linspace(0.0101, 12.0001, M);
@@ -261,8 +375,6 @@ for j=1:numel(rhos)
     EphiFourier = zeros(numel(kz), numel(omega), numel(N));
     eta0HzFourier = zeros(numel(kz), numel(omega), numel(N));
     eta0HphiFourier = zeros(numel(kz), numel(omega), numel(N));
-
-    Wphi = zeros(1, Nphi);
     
     for k=1:numel(N)
         n = N(k);
@@ -274,25 +386,72 @@ for j=1:numel(rhos)
         eta0HphiFourier(:,:,k) = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
     end
 
-    EzFourier = fftshift(fft(EzFourier, Nphi, 3));
-    EphiFourier = fftshift(fft(EphiFourier, Nphi, 3));
-    eta0HzFourier = fftshift(fft(eta0HzFourier, Nphi, 3));
-    eta0HphiFourier = fftshift(fft(eta0HphiFourier, Nphi, 3));
+    EzFourier = fftshift(fft(EzFourier, Nphi, 3), 3);
+    EphiFourier = fftshift(fft(EphiFourier, Nphi, 3), 3);
+    eta0HzFourier = fftshift(fft(eta0HzFourier, Nphi, 3), 3);
+    eta0HphiFourier = fftshift(fft(eta0HphiFourier, Nphi, 3), 3);
     
     S = conj(EphiFourier) .* eta0HzFourier - conj(EzFourier) .* eta0HphiFourier;
     for k=1:numel(N)
         S(:,:,k) = tril(S(:,:,k));
     end
 
-    Wphi = 4*pi*rho * trapz(omega, trapz(kz, S, 2), 1);
-    Wphi = Wphi(:);
+    Wphi = 4*pi*rho * trapz(kz, S, 2);
+    Wphi = reshape(Wphi, numel(omega), Nphi);
 
-    disp(max(abs(real(Wphi))));
-    disp(max(abs(imag(Wphi))));
+%     disp(max(abs(real(Wphi))));
+%     disp(max(abs(imag(Wphi))));
 
-    plot(phi * (180/pi), real(Wphi), 'LineWidth', 1);
+    surf(phi * (180/pi), omega, real(Wphi), 'EdgeColor', 'none');
+    view(2);
 end
 toc
 
+xlim([-180, 180]);
+ylim([0, 12]);
 xlabel('$\phi$ [$^{\circ}$]', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\mathrm{d}\bar{W}/\mathrm{d}\phi$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\omega R/c$', 'FontSize', 14, 'Interpreter', 'latex');
+
+%% Plotting contribution of each harmonic (2nd attempt)
+close all;
+
+epsilon = 4;
+N = -20:20;
+x0 = 0; y0 = 1.4; z0 = 0;
+
+M = 100;
+omega = linspace(0.0101, 20.0001, M);
+domega = omega(2) - omega(1);
+kz = linspace(1e-2, 20, M);
+[K, W] = meshgrid(kz, omega);
+
+betaC = 1 / sqrt(epsilon);
+gbC = betaC / sqrt(1 - betaC^2);
+gb = [0.5, 1, 2, 4, 6, 8] * gbC; 
+betas = sqrt(gb.^2 ./ (gb.^2 + 1));
+Energy = zeros(numel(betas), numel(N));
+
+nuMax = 100;
+sigma = 0;
+
+tic
+figure; hold on;
+for j=1:numel(betas)
+    beta = betas(j);
+    disp(j);
+
+    for k=1:numel(N)
+        n = N(k);
+        disp(n);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
+        specInt = tril(1./(W.^2 - K.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
+        Energy(j,k) = 0.5*(2*pi)^3 * trapz(omega, omega .* trapz(domega, specInt, 2).');
+    end
+    
+    plot(N, Energy(j,:), '--o', 'LineWidth', 1);
+end
+toc
+
+set(gca, 'YScale', 'log');
+xlabel('$N$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\bar{W}$', 'FontSize', 14, 'Interpreter', 'latex');

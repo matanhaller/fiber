@@ -7,50 +7,64 @@ clear;
 clc;
 
 rho = 1;
-x0 = 0; y0 = 1.4; z0 = 0;
+x0 = 0; y0 = 1.05; z0 = 0;
 kz = 0.5;
-omega = logspace(log10(1.0001e-3), log10(10.0001), 8e2); omega = [-flip(omega), omega];
+omega = logspace(log10(1.0001e-3), log10(20.0001), 8e3); omega = [-flip(omega), omega];
 % omega = linspace(-10, 10, 200);
 beta = linspace(1e-2, 0.2, 40);
 n = 10;
-nuMax = 1e3;
+nuMax = 100;
 sigma = 0;
 
 %% Plotting Fourier components
 close all;
 
+nuMax = 100;
+sigma = 0;
+
+M = 100;
+kz = logspace(-3, log10(20), M); kz = [-flip(kz), kz];
+omega = logspace(log10(1.0001e-3), log10(20.0001), M); omega = [-flip(omega), omega];
+
+[K, W] = meshgrid(kz, omega);
+
 tic;
 
-beta = 0.02;
-
-figure(1); hold on;
-figure(2); hold on;
+beta = 0.99;
 
 EzFourierSum = zeros(1, numel(omega));
 
-for n=-10:10
-    bs = besselSum(rho, n, kz, omega, beta, nuMax, 0);
-    bsDeriv = besselSumDeriv(rho, n, kz, omega, beta, nuMax, 0);    
-    EzFourier = EzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs, sigma);
+for n=-20:20
+    disp(n);
+    bs = besselSum(rho, n, K, W, beta, nuMax, 0);
+    bsDeriv = besselSumDeriv(rho, n, K, W, beta, nuMax, 0);    
+    EzFourier = EzPrimaryFourier(n, K, W, x0, y0, z0, beta, bs, sigma);
     EzFourierSum = EzFourierSum + EzFourier;
-    
-    figure(1);
-    plot(omega, abs(EzFourier), 'LineWidth', 1);
 end
 
-figure(1);
-xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Amplitude', 'FontSize', 14, 'Interpreter', 'latex');
-
-figure(2);
-plot(omega, abs(EzFourierSum), 'LineWidth', 1);
-xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Amplitude', 'FontSize', 14, 'Interpreter', 'latex');
+figure;
+surf(kz, omega, abs(EzFourierSum), 'EdgeColor', 'none');
+view(2);
+xlim([-20, 20]);
+ylim([-20, 20]);
+xlabel('$k_z$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
+colorbar;
 
 toc;
 
 %% Integrating to check relation to delta function of all fields
 close all;
+
+rho = 1;
+x0 = 0; y0 = 1.05; z0 = 0;
+kz = 10;
+omega = logspace(log10(1.0001e-3), log10(20.0001), 8e3); omega = [-flip(omega), omega];
+% omega = linspace(-10, 10, 200);
+beta = linspace(1e-2, 0.2, 40);
+nuMax = 100;
+sigma = 0;
+
 nuMax = 100;
 
 tic;
@@ -124,13 +138,17 @@ toc;
 
 %% Plotting ratio between electric and magnetic field intensities
 close all;
-nuMax = 40;
-beta = linspace(1e-2, 0.99, 10);
-n = 0;
+
+beta = 1 - 10.^(-linspace(1, 4, 5));
+rho = 1;
+x0 = 0; y0 = 1.05; z0 = 0;
+kz = 1;
+omega = logspace(log10(1.0001e-3), log10(20.0001), 8e3); omega = [-flip(omega), omega];
+nuMax = 100;
+n = 1;
+sigma = 0;
 
 tic;
-
-sigma = 0;
 
 for i=1:3
     figure(i); hold on;
@@ -139,10 +157,6 @@ end
 for b=beta
     fprintf('beta = %d\n', b);
     
-    EzFourierStatic = -(1/pi) * 1j*kz * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besseli(n, abs(kz)*rho);
-    EphiFourierStatic = -(1/pi) * (1j*n / rho) * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besseli(n, abs(kz)*rho);
-    ErhoFourierStatic = (1/pi) * abs(kz) * exp(1j*(pi/2)*n) * besselk(n, abs(kz)*y0) * besselip(n, abs(kz)*rho);
-
     bs = besselSum(rho, n, kz, omega, b, nuMax, 0);
     bsDeriv = besselSumDeriv(rho, n, kz, omega, b, nuMax, 0);
         
@@ -156,11 +170,11 @@ for b=beta
     eta0HrhoFourier = eta0HrhoPrimaryFourier(rho, n, kz, omega, EzFourier, eta0HzFourierDeriv);
     
     figure(1);
-    plot(omega, eta0HzFourier./EzFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', b));
+    plot(omega, eta0HzFourier./EzFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.5f$', b));
     figure(2);
-    plot(omega, eta0HphiFourier./EphiFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', b));
+    plot(omega, eta0HphiFourier./EphiFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.5f$', b));
     figure(3);
-    plot(omega, eta0HrhoFourier./ErhoFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', b));
+    plot(omega, eta0HrhoFourier./ErhoFourier*(-1j)*sign(kz), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.5f$', b));
 end
     
     
@@ -171,7 +185,6 @@ figure(2);
 title('Azimuthal', 'FontSize', 14, 'Interpreter', 'latex');
 figure(3);
 title('Radial', 'FontSize', 14, 'Interpreter', 'latex');
-figure(4);
 
 for i=1:3
     figure(i);
@@ -185,15 +198,21 @@ toc;
 %% Verifying Fourier transforms yield real functions
 close all;
 
+beta = 0.8;
+n = -3;
+rho = 1;
+x0 = 0; y0 = 1.05; z0 = 0;
+omega = logspace(log10(1.0001e-3), log10(20.0001), 8e3); omega = [-flip(omega), omega];
+nuMax = 100;
+sigma = 0;
+
+kz = 10;
+
 tic;
 
 for i=1:6
     figure(i); hold on;
 end
-
-beta = 0.8;
-n = 2;
-kz = 0.01;
 
 bs = besselSum(rho, n, kz, omega, beta, nuMax, 0);
 bsDeriv = besselSumDeriv(rho, n, kz, omega, beta, nuMax, 0);
@@ -271,12 +290,12 @@ toc;
 close all;
 
 N = -10:10;
-beta = 0.8;
+beta = 0.99;
 x0 = 0; y0 = 1.4; z0 = 0;
 nuMax = 100;
 sigma = 0;
 
-rhos = linspace(1e-3, 1.3, 120);
+rhos = linspace(1e-3, 1.3, 40);
 phi = linspace(-pi, pi, 241);
 
 kz = linspace(-10, 10, 100);
@@ -324,12 +343,12 @@ for n=N
         eta0HphiFourier = eta0HphiPrimaryFourier(rho, n, K, W, EzFourierDeriv, eta0HzFourier);
         eta0HrhoFourier = eta0HrhoPrimaryFourier(rho, n, K, W, EzFourier, eta0HzFourierDeriv);
         
-        EzInv(i) = sum(sum(EzFourier)) * dkz * domega;
-        EphiInv(i) = sum(sum(EphiFourier)) * dkz * domega;
-        ErhoInv(i) = sum(sum(ErhoFourier)) * dkz * domega;
-        eta0HzInv(i) = sum(sum(eta0HzFourier)) * dkz * domega;
-        eta0HphiInv(i) = sum(sum(eta0HphiFourier)) * dkz * domega;
-        eta0HrhoInv(i) = sum(sum(eta0HrhoFourier)) * dkz * domega;
+        EzInv(i) = trapz(omega, trapz(kz, EzFourier, 2));
+        EphiInv(i) = trapz(omega, trapz(kz, EphiFourier, 2));
+        ErhoInv(i) = trapz(omega, trapz(kz, ErhoFourier, 2));
+        eta0HzInv(i) = trapz(omega, trapz(kz, eta0HzFourier, 2));
+        eta0HphiInv(i) = trapz(omega, trapz(kz, eta0HphiFourier, 2));
+        eta0HrhoInv(i) = trapz(omega, trapz(kz, eta0HrhoFourier, 2));
     end
     
     Ez = Ez + exp(-1j*n*phi).' * EzInv;

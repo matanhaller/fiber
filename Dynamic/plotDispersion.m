@@ -14,7 +14,7 @@ omega = linspace(1e-3, maxVal+1e-4, M);
 
 tic;
 
-for n=1
+for n=3
     kz = zeros(maxModes, numel(omega));
     
     for i=1:numel(omega)

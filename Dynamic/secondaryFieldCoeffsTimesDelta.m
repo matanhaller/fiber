@@ -1,20 +1,20 @@
 % Coefficients Ank,..,Dnk of the secondary field, times the determinant.
 % (Relevant only at the poles)
 
-function [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffsTimesDelta(n, kz, omega, x0, y0, z0, beta, epsilon, nuMax)
+function [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffsTimesDelta(n, kz, omega, x0, y0, z0, beta, epsilon, nuMax, sigma, calcSum)
     % Dispersion relation wavevectors
     kVac = sqrt(kz.^2 - omega.^2); kVac = real(kVac) + 1j*sign(omega).*imag(kVac);    
     kCyl = sqrt(kz.^2 - epsilon * omega.^2); kCyl = real(kCyl) + 1j*sign(omega).*imag(kCyl);
     
     % Bessel function sums
-    bs = besselSum(1, n, kz, omega, beta, nuMax);
-    bsDeriv = besselSumDeriv(1, n, kz, omega, beta, nuMax); 
+    bs = besselSum(1, n, kz, omega, beta, nuMax, calcSum);
+    bsDeriv = besselSumDeriv(1, n, kz, omega, beta, nuMax, calcSum); 
     
     % Primary fields
-    Ezp = EzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs);
-    eta0Hzp = eta0HzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs);
-    EzpDeriv = EzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv);
-    eta0HzpDeriv = eta0HzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv);
+    Ezp = EzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs, sigma);
+    eta0Hzp = eta0HzPrimaryFourier(n, kz, omega, x0, y0, z0, beta, bs, sigma);
+    EzpDeriv = EzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv, sigma);
+    eta0HzpDeriv = eta0HzPrimaryFourierDeriv(n, kz, omega, x0, y0, z0, beta, bsDeriv, sigma);
     Ephip = EphiPrimaryFourier(1, n, kz, omega, Ezp, eta0HzpDeriv);
     eta0Hphip = eta0HphiPrimaryFourier(1, n, kz, omega, EzpDeriv, eta0Hzp);
     

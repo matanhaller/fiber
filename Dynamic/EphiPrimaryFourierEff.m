@@ -1,9 +1,9 @@
 % Effective phi component of the primary electric field.
 
-function EphiFourierEff = EphiPrimaryFourierEff(n, kz, omega, epsilon, Ez, Ephi, eta0Hz)
-    kCyl = sqrt(kz.^2 - epsilon * omega.^2); kCyl = real(kCyl) + 1j*sign(omega).*imag(kCyl);
+function EphiFourierEff = EphiPrimaryFourierEff(n, kz, omega, epsilon, Ez, Ephi, eta0Hz, eps)
+    kVac = sqrt(kz.^2 - omega.^2) + eps; kVac = real(kVac) + 1j*sign(omega).*imag(kVac);
     
-    EphiFourierEff = - n.*kz./(kCyl.^2).*Ez ...
-        + 1j*(omega./kCyl).*(besselip(n,kCyl)./besseli(n,kCyl)).*eta0Hz ...
-        + Ephi;
+    EphiFourierEff = Ephi ...
+        - n.*kz./(kVac.^2).*Ez ...
+        + 1j*(omega./kVac).*(besselkp(n,kVac)./besselk(n,kVac)).*eta0Hz;
 end

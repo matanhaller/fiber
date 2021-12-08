@@ -7,7 +7,7 @@ clear;
 clc;
 
 epsilon = 1.2;
-rho = 1.4;
+rho = 1.2;
 x0 = 0; y0 = 1.4; z0 = 0;
 omega = linspace(-10, 10, 8e3);
 kz = 0.1;
@@ -20,10 +20,88 @@ beta = linspace(1e-2, 0.2, 40);
 n = -7;
 nuMax = 100;
 
+%% Plotting Fourier components
+close all;
+
+sigma = 0.0;
+nuMax = 100;
+epsilon = 12;
+eps = 1e-1;
+
+y0 = 1.05;
+rho = 0.95;
+
+Mw = 4e2; Mk = 4e2;
+
+omegaMax = 20;
+kzMax = 20;
+omega = linspace(-omegaMax, omegaMax, Mw);
+kz = linspace(-kzMax, kzMax, Mk);
+[W, K] = meshgrid(omega, kz);
+
+tic;
+
+beta = 0.99;
+
+AnkSum = zeros((size(W)));
+BnkSum = zeros((size(W)));
+eta0CnkSum = zeros((size(W)));
+eta0DnkSum = zeros((size(W)));
+EzFourierSum = zeros(size(W));
+EphiFourierSum = zeros(size(W));
+ErhoFourierSum = zeros(size(W));
+eta0HzFourierSum = zeros(size(W));
+eta0HphiFourierSum = zeros(size(W));
+eta0HrhoFourierSum = zeros(size(W));
+
+for n=-3
+    disp(n);
+    [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0, eps);
+   
+    EzFourier = EzSecondaryFourier(Ank, Bnk, rho, n, K, W, epsilon, eps);
+    EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
+    ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
+    eta0HzFourier = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
+    eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
+    eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
+%     eta0HzFourier(abs(eta0HzFourier) > 0.37) = 0;
+    AnkSum = AnkSum + Ank;
+    BnkSum = BnkSum + Bnk;
+    eta0CnkSum = eta0CnkSum + eta0Cnk;
+    eta0DnkSum = eta0DnkSum + eta0Dnk;
+
+    EzFourierSum = EzFourierSum + EzFourier;
+    EphiFourierSum = EphiFourierSum + EphiFourier;
+    ErhoFourierSum = ErhoFourierSum + ErhoFourier;
+    eta0HzFourierSum = eta0HzFourierSum + eta0HzFourier;
+    eta0HphiFourierSum = eta0HphiFourierSum + eta0HphiFourier;
+    eta0HrhoFourierSum = eta0HrhoFourierSum + eta0HrhoFourier;
+end
+
+figure; hold on;
+surf(W, K, abs(eta0HzFourierSum), 'EdgeColor', 'none');
+view(2);
+xlim([omega(1), omega(end)]);
+ylim([kz(1), kz(end)]);
+xlabel('$\bar{\omega}$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\bar{k}_z$', 'FontSize', 14, 'Interpreter', 'latex');
+colorbar;
+% caxis([0, 0.15]);
+
+x = linspace(-20, 20, 1e3);
+plot3(x, x, 0.1 * ones(1, numel(x)), '--w', 'LineWidth', 1);
+plot3(x, -x, 0.1 * ones(1, numel(x)), '--w', 'LineWidth', 1);
+plot3(x, x * sqrt(epsilon), 0.1 * ones(1, numel(x)), '--w', 'LineWidth', 1);
+plot3(x, -x * sqrt(epsilon), 0.1 * ones(1, numel(x)), '--w', 'LineWidth', 1);
+
+toc;
+
 %% Integrating to check relation to delta function of all fields
 tic;
 
+esilon = 12;
 sigma = 0;
+eps = 0;
 
 for i=1:3
     figure(i); hold on;
@@ -57,14 +135,14 @@ for n=0:5
     for i=1:numel(beta)
         b = beta(i);
         
-        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y0, z0, b, epsilon, nuMax, sigma, 0);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y0, z0, b, epsilon, nuMax, sigma, 0, eps);
         
-        EzFourier = EzSecondaryFourier(Ank, Bnk, rho, n, kz, omega, epsilon);
-        EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon);
-        ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon);
-        eta0HzFourier = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon);
-        eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon);
-        eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon);
+        EzFourier = EzSecondaryFourier(Ank, Bnk, rho, n, kz, omega, epsilon, eps);
+        EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon, eps);
+        ErhoFourier = ErhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon, eps);
+        eta0HzFourier = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon, eps);
+        eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon, eps);
+        eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon, eps);
 
         intVecEz(i) = trapz(omega, EzFourier);
         intVecEphi(i) = trapz(omega, EphiFourier);
@@ -101,15 +179,16 @@ toc;
 %% Plotting ratio between electric and magnetic fields in the far field
 close all;
 
+
 sigma = 0;
 nuMax = 100;
 epsilon = 4;
 
 rhos = logspace(log10(1.02), log10(50), 1e3);
-beta = 0.8;
+beta = 0.1;
 
-kz = 0.5 * omega;
 omega = 1;
+kz = 0.95 * omega;
 
 EzFourier = zeros(1, numel(rhos));
 EphiFourier = zeros(1, numel(rhos));
@@ -148,8 +227,8 @@ legend('FontSize', 14, 'Interpreter', 'latex');
 close all;
 
 epsilon = 12;
-omega = linspace(2e-2, 12, 400);
-beta = 0.8;
+omega = linspace(2e-2, 12, 100);
+beta = 0.99;
 x0 = 0; y0 = 1.4; z0 = 0;
 rho = 1.05;
 n = 10;
@@ -232,13 +311,13 @@ toc;
 
 close all;
 epsilon = 12;
-omega = 9;
+omega = 2;
 beta = 0.8;
 x0 = 0; y0 = 1.4; z0 = 0;
-n = -7;
-kz = 0.01;
-nuMax = 40;
-sigma = 0.2;
+n = -1;
+kz = 0.2;
+nuMax = 100;
+sigma = 0.0;
 
 rhos = linspace(0.5, 1.39, 1e3);
 
@@ -270,7 +349,7 @@ for i=1:numel(rhos)
     eta0HphiFourierP = eta0HphiPrimaryFourier(rho, n, kz, omega, EzFourierDerivP, eta0HzFourierP);
     eta0HrhoFourierP = eta0HrhoPrimaryFourier(rho, n, kz, omega, EzFourierP, eta0HzFourierDerivP);
     
-    [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
+    [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y0, z0, beta, epsilon, nuMax, sigma, 0, Inf);
 
     EzFourierS = EzSecondaryFourier(Ank, Bnk, rho, n, kz, omega, epsilon);
     EphiFourierS = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon);
@@ -326,12 +405,12 @@ close all;
 
 epsilon = 12;
 omega = linspace(-10, 10, 200);
-beta = 0.8;
+beta = 0.99;
 x0 = 0; y0 = 1.4; z0 = 0;
-rho = 1.25;
-n = -6;
-kz = 0.01;
-nuMax = 40;
+rho = 0.25;
+n = -1;
+kz = 1e-3;
+nuMax = 100;
 sigma = 0;
 
 tic;
@@ -340,8 +419,8 @@ for i=1:6
     figure(i); hold on;
 end
 
-[Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y0, z0, beta, epsilon, nuMax, sigma);
-[Ank2, Bnk2, eta0Cnk2, eta0Dnk2] = secondaryFieldCoeffs(n, -kz, omega, x0, y0, z0, beta, epsilon, nuMax, sigma);
+[Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
+[Ank2, Bnk2, eta0Cnk2, eta0Dnk2] = secondaryFieldCoeffs(n, -kz, omega, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
 
 EzFourier = EzSecondaryFourier(Ank, Bnk, rho, n, kz, omega, epsilon);
 EphiFourier = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, kz, omega, epsilon);
@@ -505,7 +584,7 @@ epsilon = 12;
 kz = linspace(-40, 40, M);
 omega = linspace(-10.001, 10.001, M);
 [K, W] = meshgrid(kz, omega);
-beta = 0.9;
+beta = 0.99;
 x0 = 0; y0 = 1.05; z0 = 0;
 rho = 1.25;
 n = -7;

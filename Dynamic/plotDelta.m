@@ -24,9 +24,7 @@ I = besseli(n,kCyl);
 Ip = besselip(n,kCyl);
 K = besselk(n,kVac);
 Kp = besselkp(n,kVac);
-Delta = omega.^2 .* ((1./kVac).*(Kp./K) - epsilon.*(1./kCyl).*(Ip./I)) ...
-    .* ((1./kVac).*(Kp./K) - (1./kCyl).*(Ip./I)) ...
-    - n^2.*kz.^2.*(1./(kVac.^2) - 1./(kCyl.^2));
+Delta = DeltaCylinder(n, kz, omega, epsilon);
 
 figure; hold on;
 plot(omega, real(Delta), 'LineWidth', 1);
@@ -35,31 +33,16 @@ plot(omega, zeros(1, numel(omega)), 'LineWidth', 1);
 plot(kz/sqrt(epsilon)*ones(1,2), [-10,10], 'LineWidth', 1);
 ylim([-10, 10]);
 xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\Delta/K_n$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\Delta$', 'FontSize', 14, 'Interpreter', 'latex');
 
 %% Plotting for specific omega
 close all;
 
-n = 1;
-omega = 1.8;
-kz = linspace(0, 30, M+1);
+n = 3;
+omega = 8;
+kz = linspace(0, 10, M+1);
 
-% Dispersion relation wavevectors
-kVac = sqrt(kz.^2 - omega.^2);    
-kCyl = sqrt(kz.^2 - epsilon * omega.^2);
-       
-% Determinant
-I = besseli(n,kCyl);
-Ip = besselip(n,kCyl);
-K = besselk(n,kVac);
-Kp = besselkp(n,kVac);
-
-M11 = 1j*omega.*(Kp./kVac - epsilon.*Ip./I.*K./kCyl);
-M12 = n.*kz.*(1./(kVac.^2) - 1./(kCyl.^2)) .* K;
-M21 = M12;
-M22 = -1j*omega.*(Kp./kVac - Ip./I.*K./kCyl);
-
-Delta = (M11 .* M22 - M12 .* M21) ./ K;
+Delta = DeltaCylinder(n, kz, omega, epsilon);
 
 figure; hold on;
 plot(kz, real(Delta), 'LineWidth', 1);
@@ -67,47 +50,37 @@ plot(kz, imag(Delta), 'LineWidth', 1);
 plot(sqrt(epsilon)*omega*ones(1,2), [-0.1,0.1], 'LineWidth', 1);
 ylim([-0.1, 0.1]);
 xlabel('$k_z$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\Delta/K_n$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\Delta$', 'FontSize', 14, 'Interpreter', 'latex');
 
 % Plotting eigenmodes
-kz = fzero(@(kz) real(Det(n, kz, omega, epsilon)), 2)
+kz = fzero(@(kz) real(DeltaCylinder(n, kz, omega, epsilon)), 8.5)
 rhos = linspace(1e-3, 1.5, 120);
 phi = linspace(-pi, pi, 1e3);
 
 [R, P] = meshgrid(rhos, phi);
 X = R.*cos(P); Y = R.*sin(P);
 
-kVac = sqrt(kz.^2 - omega.^2);    
-kCyl = sqrt(kz.^2 - epsilon * omega.^2);
-
-I = besseli(n,kCyl);
-Ip = besselip(n,kCyl);
-K = besselk(n,kVac);
-Kp = besselkp(n,kVac);
-
-kVac = sqrt(kz.^2 - omega.^2);    
-kCyl = sqrt(kz.^2 - epsilon * omega.^2);
+kVac = sqrt(kz.^2 - omega.^2); kVac = real(kVac) + 1j*sign(omega).*imag(kVac);    
+kCyl = sqrt(kz.^2 - epsilon * omega.^2); kCyl = real(kCyl) + 1j*sign(omega).*imag(kCyl);
 
 I = besseli(n,kCyl);
 Ip = besselip(n,kCyl);
 K = besselk(n,kVac);
 Kp = besselkp(n,kVac);
     
-M11 = 1j*omega.*(Kp./kVac - epsilon.*Ip./I.*K./kCyl) + 1e-100;
-M12 = n.*kz.*(1./(kVac.^2) - 1./(kCyl.^2)) .* K + 1e-100;
-M21 = M12;
-M22 = -1j*omega.*(Kp./kVac - Ip./I.*K./kCyl) + 1e-100;
+M11 = 1j*omega.*(epsilon.*Ip./kCyl - (Kp./K).*I./kVac) + 1e-100;
+    M12 = n.*kz.*(1./(kCyl.^2) - 1./(kVac.^2)) .* I + 1e-100;
+    M21 = M12;
+    M22 = -1j*omega.*(Ip./kCyl - (Kp./K).*I./kVac) + 1e-100;
 
 Delta = M11 .* M22 - M12 .* M21;
 
 disp(abs(Delta));
 
-Bnk = 1;
-eta0Dnk = - M11 / M12 * Bnk;
-eta0Dnk2 = - M21 / M22 * Bnk;
-
-Ank = Bnk * K / I;
-eta0Cnk = eta0Dnk * K / I;
+Ank = 1;
+Bnk = Ank * I / K;
+eta0Cnk = - M11 / M12 * Ank;
+eta0Dnk = eta0Cnk * I / K;
 
 EzFourier = zeros(1, numel(rhos));
 EphiFourier = zeros(1, numel(rhos));
@@ -148,48 +121,34 @@ view(2);
 colorbar;
 
 %% Plotting for all kz, omega
-M = 1e3;
-kz = linspace(-5, 5, M+1);
-omega = linspace(0, 5, M+1);
-[Kz, W] = meshgrid(kz, omega);
+close all;
+
+epsilon = 4;
+n = -1;
+
+M = 400;
+kz = linspace(-10.0001, 10.0001, M);
+omega = linspace(-20, 20, M);
+[W, Kz] = meshgrid(omega, kz);
 
 % Dispersion relation wavevectors
-kVac = sqrt(Kz.^2 - W.^2);    
-kCyl = sqrt(Kz.^2 - epsilon * W.^2);
+kVac = sqrt(Kz.^2 - W.^2); kVac = real(kVac) + 1j*sign(W).*imag(kVac);    
+kCyl = sqrt(Kz.^2 - epsilon * W.^2); kCyl = real(kCyl) + 1j*sign(W).*imag(kCyl);
        
 % Determinant
-I = besseli(n,kCyl);
-Ip = besselip(n,kCyl);
-K = besselk(n,kVac);
-Kp = besselkp(n,kVac);
-Delta = W.^2 .* ((1./kVac).*(Kp./K) - epsilon.*(1./kCyl).*(Ip./I)) ...
-    .* ((1./kVac).*(Kp./K) - (1./kCyl).*(Ip./I)) ...
-    - n^2.*Kz.^2.*(1./(kVac.^2) - 1./(kCyl.^2));
+tic
+Delta = DeltaCylinder(n, Kz, W, epsilon);
+toc
 
-Delta = abs(Delta) < 0.25;
+% Delta = Delta .* (abs(W) > abs(Kz));
 
 figure; hold on;
-surf(Kz, W, real(Delta), 'EdgeColor', 'None');
+surf(W, Kz, log10(abs(Delta)), 'EdgeColor', 'none');
+view(2);
+xlim([-20,20]);
+ylim([-10,10]);
 % zlim([-5, 5]);
 % caxis([-5, 5]);
-xlabel('$k_z$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
-zlabel('$\Delta/K_n$', 'FontSize', 14, 'Interpreter', 'latex');
+xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$k_z$', 'FontSize', 14, 'Interpreter', 'latex');
 colorbar;
-
-function d = Det(n, kz, omega, epsilon)
-    kVac = sqrt(kz.^2 - omega.^2);    
-    kCyl = sqrt(kz.^2 - epsilon * omega.^2);
-
-    I = besseli(n,kCyl);
-    Ip = besselip(n,kCyl);
-    K = besselk(n,kVac);
-    Kp = besselkp(n,kVac);
-    
-    M11 = 1j*omega.*(Kp./kVac - epsilon.*Ip./I.*K./kCyl);
-    M12 = n.*kz.*(1./(kVac.^2) - 1./(kCyl.^2)) .* K;
-    M21 = M12;
-    M22 = -1j*omega.*(Kp./kVac - Ip./I.*K./kCyl);
-    
-    d = M11 * M22 - M12 * M21;
-end
