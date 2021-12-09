@@ -5,261 +5,28 @@ close all;
 clear;
 clc;
 
-N = -10:10;
-epsilon = 12;
-x0 = 0; y0 = 1.4; z0 = 0;
-beta = 0.49;
-nuMax = 40;
-
-M = 2.5e3;
-rho = 1.5;
-kz = linspace(1e-4, 0.75, M);
-omegas = linspace(1e-2, 6.0001, M);
-W = zeros(numel(epsilon), numel(omegas));
-
 %% Plotting spectrum for different permittivities
-tic
-figure;
-for j=1:numel(epsilon)
-    er = epsilon(j);
-    disp(er);
-    for n=N
-        disp(n);
-        for i=1:numel(omegas)
-            omega = omegas(i);
-            disp(omega);
-            kRange = linspace(1e-4, omega, M+1); kRange(end) = [];
-            [K, Wi] = meshgrid(kRange, omega);
-            [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, Wi, x0, y0, z0, beta, er, nuMax);
-            W(j, i) = W(j, i) + omega .* trapz(kRange, 1./(omega^2 - kRange.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
-        end
-    end
-end
-
-for j=1:numel(epsilon)
-    er = epsilon(j);
-    semilogy(omegas, W(j, :), 'LineWidth', 1, 'DisplayName', sprintf('$\\varepsilon=%d$', er)); hold on;
-end
-
-xlabel('$\omega R/c$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Normalized Spectrum', 'FontSize', 14, 'Interpreter', 'latex');
-legend('FontSize', 14, 'Interpreter', 'latex');
-toc
-
-%% Plotting spectrum for different velocities
-epsilon = 4;
-betaC = 1 / sqrt(epsilon);
-gbC = betaC / sqrt(1 - betaC^2);
-gb = [0.5, 0.9, 1.1, 2] * gbC; 
-betas = sqrt(gb.^2 ./ (gb.^2 + 1));
-W = zeros(numel(betas), numel(omegas));
-
-tic
-figure; hold on;
-for j=1:numel(betas)
-    beta = betas(j);
-    disp(beta);
-    for n=N
-        disp(n);
-        for i=1:numel(omegas)
-            omega = omegas(i);
-            kRange = linspace(1e-4, omega, M+1); kRange(end) = [];
-            [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kRange, omega, x0, y0, z0, beta, epsilon);
-            W(j, i) = W(j, i) + omega .* trapz(kRange, 1./(omega^2 - kRange.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
-        end
-    end
-end
-
-for j=1:numel(betas)
-    beta = betas(j);
-    plot(omegas, W(j, :) / max(W(j, :)), 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', beta));
-end
-
-xlabel('$\omega R/c$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Normalized Spectrum', 'FontSize', 14, 'Interpreter', 'latex');
-legend('FontSize', 14, 'Interpreter', 'latex');
-toc
-
-%% Integrating over spectrum for different harmonics
-epsilon = 12;
-N = -10:10;
-betaC = 1 / sqrt(epsilon);
-gbC = betaC / sqrt(1 - betaC^2);
-gb = [0.5, 1, 2, 4] * gbC; 
-betas = sqrt(gb.^2 ./ (gb.^2 + 1));
-Energy = zeros(numel(betas), numel(N));
-
-tic
-figure;
-for j=1:numel(betas)
-    beta = betas(j);
-    disp(beta);
-    for k=1:numel(N)
-        n = N(k);
-        disp(n);
-        W = zeros(1, numel(omegas));
-        for i=1:numel(omegas)
-            omega = omegas(i);
-            kRange = linspace(1e-4, omega, M+1); kRange(end) = [];
-            [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kRange, omega, x0, y0, z0, beta, epsilon);
-            W(i) = omega .* trapz(kRange, 1./(omega^2 - kRange.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
-        end
-        Energy(j, k) = trapz(omegas, W);
-    end
-end
-
-for j=1:numel(betas)
-    beta = betas(j);
-    semilogy(N, Energy(j, :) ./ max(Energy(j, :)), '--o', 'LineWidth', 1, 'DisplayName', sprintf('$\\beta=%.2f$', beta)); hold on;
-end
-
-toc
-
-xlabel('$n$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Normalized Energy', 'FontSize', 14, 'Interpreter', 'latex');
-legend('FontSize', 14, 'Interpreter', 'latex');
-
-%% Plotting spectrum for different impact parameters
-y0Vec = 10;
-% y0Vec = [1.05, 1.4, 2, 5, 10];
-epsilon = 12;
-
-tic
-figure;
-for j=1:numel(y0Vec)
-    y0 = y0Vec(j);
-    for n=N
-        disp(n);
-        for i=1:numel(omegas)
-            omega = omegas(i);
-            disp(omega);
-            kRange = linspace(1e-4, omega, M+1); kRange(end) = [];
-            [K, Wi] = meshgrid(kRange, omega);
-            [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, Wi, x0, y0, z0, beta, epsilon, nuMax);
-            W(j, i) = W(j, i) + omega .* trapz(kRange, 1./(omega^2 - kRange.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
-        end
-    end
-end
-
-for j=1:numel(y0Vec)
-    y0 = y0Vec(j);
-    semilogy(omegas, W(j, :), 'LineWidth', 1, 'DisplayName', sprintf('$y_0=%d$', y0)); hold on;
-end
-
-xlabel('$\omega R/c$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Normalized Spectrum', 'FontSize', 14, 'Interpreter', 'latex');
-legend('FontSize', 14, 'Interpreter', 'latex');
-toc
-
-%% Plotting spectrum for different distances from the cylinder
-epsilon = 12;
-beta = 0.8;
-y0Vec = logspace(log10(1.05), 1, 40);
-M = 400;
-omega = linspace(0.0101, 12.0001, M);
-domega = omega(2) - omega(1);
-kz = linspace(1e-2, 12, M);
-[K, Wi] = meshgrid(kz, omega);
-W = zeros(1, numel(y0Vec));
-spec = zeros(numel(y0Vec), numel(omega));
-
-tic
-figure;
-for j=1:numel(y0Vec)
-    y0 = y0Vec(j);
-    disp(j);
-    for n=N
-        disp(n);
-        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, Wi, x0, y0, z0, beta, epsilon, nuMax);
-        specInt = tril(1./(Wi.^2 - K.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
-        spec(j,:) = spec(j,:) + omega .* trapz(domega, specInt, 2).';
-    end
-    W(j) = 0.5*(2*pi)^3 * trapz(omega, spec(j,:));
-end
-toc
-
-plot(y0Vec - 1, W, 'LineWidth', 1);
-xlabel('$\eta-1$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\bar{W}$', 'FontSize', 14, 'Interpreter', 'latex');
-savefig(gcf, 'multiple_eta_eps_12.fig');
-
-figure; hold on;
-for i=1:numel(y0Vec)
-    plot(omega, spec(i,:), 'LineWidth', 1);
-end
-
-savefig(gcf, 'spec_multiple_eta_eps_12.fig');
-
-%% Plotting spectrum for different velocities (2nd attempt)
-epsilon = 12;
-betaC = 1 / sqrt(epsilon);
-gbC = betaC / sqrt(1 - betaC^2);
-gb = (0.1:0.1:4) * gbC; 
-betas = sqrt(gb.^2 ./ (gb.^2 + 1));
-y0 = 1.4;
-
-M = 400;
-omega = linspace(0.0101, 12.0001, M);
-domega = omega(2) - omega(1);
-kz = linspace(1e-2, 12, M);
-[K, Wi] = meshgrid(kz, omega);
-W = zeros(1, numel(betas));
-spec = zeros(numel(betas), numel(omega));
-
-tic
-figure;
-for j=1:numel(betas)
-    beta = betas(j);
-    disp(j);
-    for n=N
-        disp(n);
-        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, Wi, x0, y0, z0, beta, epsilon, nuMax);
-        specInt = tril(1./(Wi.^2 - K.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
-        spec(j,:) = spec(j,:) + omega .* trapz(domega, specInt, 2).';
-    end
-    W(j) = 0.5*(2*pi)^3 * trapz(omega, spec(j,:));
-end
-toc
-
-plot(gb, W, 'LineWidth', 1);
-xlabel('$\gamma\beta$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\bar{W}$', 'FontSize', 14, 'Interpreter', 'latex');
-savefig(gcf, 'multiple_beta_eps_12.fig');
-
-
-figure; hold on;
-for i=1:numel(betas)
-    plot(omega, spec(i,:), 'LineWidth', 1);
-end
-
-savefig(gcf, 'spec_multiple_beta_eps_12.fig');
-
-%% Plotting for different permittivities (2nd attempt)
 % close all;
 
 epsilonVec = [2, 4, 12];
-% epsilonVec = linspace(2, 12, 40);
 x0 = 0; y0 = 1.4; z0 = 0;
 
-M = 1e2;
-omega = linspace(1e-3, 20, M);
-domega = omega(2) - omega(1);
-kz = linspace(1e-3, 20, M);
+M = 4e2;
+omegaMax = 10;
+omega = linspace(1e-3, omegaMax, M);
+kz = linspace(1e-3, omegaMax, M);
 [K, W] = meshgrid(kz, omega);
 spec = zeros(numel(epsilonVec), numel(omega));
 nuMax = 100;
 sigma = 0;
-eps = 1e-6;
-
-rho = 400;
-
+eps = 1e-2;
 tic
 
 for j=1:numel(epsilonVec)
     epsilon = epsilonVec(j);
     disp(j);
   
-    beta = 0.8;
+    beta = 0.99;
 
     for n=-20:20
         disp(n);
@@ -282,71 +49,198 @@ end
 
 toc
 
-% set(gca, 'YScale', 'log');
-xlabel('$\omega$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('Normalized spectrum', 'FontSize', 14, 'Interpreter', 'latex');
+xlabel('$\bar{\omega}$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\mathrm{d}\bar{W}/\mathrm{d}\bar{\omega}$', 'FontSize', 14, 'Interpreter', 'latex');
+
+%% Plotting spectrum for different velocities + contribution of each harmonic
+% close all;
+
+betaVec = [0.8, 0.9, 0.95, 0.97, 0.99];
+x0 = 0; y0 = 1.05; z0 = 0;
+
+N = -20:20;
+epsilon = 2;
+
+M = 4e2;
+omegaMax = 20;
+omega = linspace(1e-3, omegaMax, M);
+kz = linspace(1e-3, omegaMax, M);
+[K, W] = meshgrid(kz, omega);
+spec = zeros(numel(betaVec), numel(omega));
+WHarmonics = zeros(numel(betaVec), numel(N));
+nuMax = 100;
+sigma = 0;
+eps = 1e-2;
+
+tic
+
+for j=1:numel(betaVec)
+    beta = betaVec(j);
+    disp(j);
+  
+    for k=1:numel(N)
+        n = N(k);
+        disp(n);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0, eps);
+
+        specInt = (abs(Bnk).^2 + abs(eta0Dnk).^2) ./ (W.^2 - K.^2 + eps) .* (abs(W) > abs(K));
+        specInt(isnan(specInt)) = 0;
+
+        specHarmonic = omega .* trapz(kz, specInt, 2).';
+        WHarmonics(j,k) = trapz(omega, specHarmonic);
+        spec(j,:) = spec(j,:) + specHarmonic;
+    end
+end
+
+toc
+
+spec = 0.5 * (2*pi)^3 * real(spec);
+WHarmonics = 0.5 * (2*pi)^3 * real(WHarmonics);
+
+figure; hold on;
+
+for j=1:size(spec,1)
+    plot(omega, spec(j,:), 'LineWidth', 1);
+end
+
+xlabel('$\bar{\omega}$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\mathrm{d}\bar{W}/\mathrm{d}\bar{\omega}$', 'FontSize', 14, 'Interpreter', 'latex');
+
+figure; hold on;
+
+for j=1:size(WHarmonics,1)
+    plot(N, WHarmonics(j,:), '--o', 'LineWidth', 1);
+end
+
+xlabel('$n$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\bar{W}_n$', 'FontSize', 14, 'Interpreter', 'latex');
+
+%% Plotting spectrum for different distances from the cylinder
+% close all;
+
+y0Vec = [1.05, 1.4, 2];
+x0 = 0; z0 = 0;
+
+N = -20:20;
+epsilon = 4;
+beta = 0.8;
+
+M = 1e2;
+omegaMax = 20;
+omega = linspace(1e-3, omegaMax, M);
+kz = linspace(1e-3, omegaMax, M);
+[K, W] = meshgrid(kz, omega);
+spec = zeros(numel(betaVec), numel(omega));
+nuMax = 100;
+sigma = 0;
+eps = 1e-8;
+
+tic
+
+for j=1:numel(y0Vec)
+    y0 = y0Vec(j);
+    disp(j);
+  
+    for n=-20:20
+        disp(n);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0, eps);
+
+        specInt = (abs(Bnk).^2 + abs(eta0Dnk).^2) ./ (W.^2 - K.^2 + eps) .* (abs(W) > abs(K));
+        specInt(isnan(specInt)) = 0;
+
+        specHarmonic = omega .* trapz(kz, specInt, 2).';
+        spec(j,:) = spec(j,:) + omega .* trapz(kz, specInt, 2).';
+    end
+end
+
+toc
+
+spec = 0.5 * (2*pi)^3 * real(spec);
+
+figure; hold on;
+
+for j=1:size(spec,1)
+    plot(omega, spec(j,:), 'LineWidth', 1);
+end
+
+xlabel('$\bar{\omega}$', 'FontSize', 14, 'Interpreter', 'latex');
+ylabel('$\mathrm{d}\bar{W}/\mathrm{d}\bar{\omega}$', 'FontSize', 14, 'Interpreter', 'latex');
 
 %% Plotting angular contribution
 close all;
 
 epsilon = 2;
-beta = 0.8;
-x0 = 0; y0 = 1.05; z0 = 0;
+betaVec = [0.2, 0.8, 0.99];
+x0 = 0; y0 = 1.4; z0 = 0;
 N = -20:20;
-M = 400;
+M = 1e2;
 nuMax = 100;
-rhos = 40;
-omega = linspace(0.0101, 20.0001, M);
-kz = linspace(1e-2, 20, M);
+rho = 100;
+omegaMax = 20;
+omega = linspace(1e-3, omegaMax, M);
+kz = linspace(1e-3, omegaMax, M);
 [K, W] = meshgrid(kz, omega);
 Nphi = 1e3;
 phi = linspace(-pi, pi, Nphi+1); phi(end) = [];
 sigma = 0;
 
-tic
-figure; hold on;
-for j=1:numel(rhos)
-    rho = rhos(j);
-%     disp(rho);
+Wphi = zeros(numel(betaVec), Nphi);
 
+eps = 0;
+
+tic
+
+for i=1:numel(betaVec)
+    beta = betaVec(i);    
     EzFourier = zeros(numel(kz), numel(omega), numel(N));
     EphiFourier = zeros(numel(kz), numel(omega), numel(N));
     eta0HzFourier = zeros(numel(kz), numel(omega), numel(N));
     eta0HphiFourier = zeros(numel(kz), numel(omega), numel(N));
-    
+        
     for k=1:numel(N)
         n = N(k);
         disp(n);
-        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
-        EzFourier(:,:,k) = EzSecondaryFourier(Ank, Bnk, rho, n, K, W, epsilon);
-        EphiFourier(:,:,k) = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
-        eta0HzFourier(:,:,k) = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
-        eta0HphiFourier(:,:,k) = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon);
+        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0, eps);
+        EzFourier(:,:,k) = EzSecondaryFourier(Ank, Bnk, rho, n, K, W, epsilon, eps);
+        EphiFourier(:,:,k) = EphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
+        eta0HzFourier(:,:,k) = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
+        eta0HphiFourier(:,:,k) = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
     end
-
+    
     EzFourier = fftshift(fft(EzFourier, Nphi, 3), 3);
     EphiFourier = fftshift(fft(EphiFourier, Nphi, 3), 3);
     eta0HzFourier = fftshift(fft(eta0HzFourier, Nphi, 3), 3);
     eta0HphiFourier = fftshift(fft(eta0HphiFourier, Nphi, 3), 3);
-    
+        
     S = conj(EphiFourier) .* eta0HzFourier - conj(EzFourier) .* eta0HphiFourier;
     for k=1:numel(N)
-        S(:,:,k) = tril(S(:,:,k));
+        S(:,:,k) = S(:,:,k) .* (abs(W) > abs(K));
     end
-
-    Wphi = 4*pi*rho * trapz(omega, trapz(kz, S, 2), 1);
-    Wphi = Wphi(:);
-
-    disp(max(abs(real(Wphi))));
-    disp(max(abs(imag(Wphi))));
-
-    plot(phi * (180/pi), real(Wphi), 'LineWidth', 1);
+    S(isnan(S)) = 0;
+    
+    Wphi(i,:) = 4*pi*rho * trapz(omega, trapz(kz, S, 2), 1);
 end
+
 toc
+
+disp(max(abs(real(Wphi)), [], 2));
+disp(max(abs(imag(Wphi)), [], 2));
+
+Wphi = real(Wphi);
+
+figure; hold on;
+
+for i=1:numel(betaVec)
+    plot(phi * (180/pi), Wphi(i,:), 'LineWidth', 1); 
+end
 
 xlim([-180, 180]);
 xlabel('$\phi$ [$^{\circ}$]', 'FontSize', 14, 'Interpreter', 'latex');
 ylabel('$\mathrm{d}\bar{W}/\mathrm{d}\phi$', 'FontSize', 14, 'Interpreter', 'latex');
+
+figure;
+polarplot(phi, Wphi ./ max(Wphi,[],2), 'LineWidth', 2);
+
 
 %% Plotting angle-frequency spectrum
 close all;
@@ -395,6 +289,7 @@ for j=1:numel(rhos)
     for k=1:numel(N)
         S(:,:,k) = tril(S(:,:,k));
     end
+    S(isnan(S)) = 0;
 
     Wphi = 4*pi*rho * trapz(kz, S, 2);
     Wphi = reshape(Wphi, numel(omega), Nphi);
@@ -411,47 +306,3 @@ xlim([-180, 180]);
 ylim([0, 12]);
 xlabel('$\phi$ [$^{\circ}$]', 'FontSize', 14, 'Interpreter', 'latex');
 ylabel('$\omega R/c$', 'FontSize', 14, 'Interpreter', 'latex');
-
-%% Plotting contribution of each harmonic (2nd attempt)
-close all;
-
-epsilon = 4;
-N = -20:20;
-x0 = 0; y0 = 1.4; z0 = 0;
-
-M = 100;
-omega = linspace(0.0101, 20.0001, M);
-domega = omega(2) - omega(1);
-kz = linspace(1e-2, 20, M);
-[K, W] = meshgrid(kz, omega);
-
-betaC = 1 / sqrt(epsilon);
-gbC = betaC / sqrt(1 - betaC^2);
-gb = [0.5, 1, 2, 4, 6, 8] * gbC; 
-betas = sqrt(gb.^2 ./ (gb.^2 + 1));
-Energy = zeros(numel(betas), numel(N));
-
-nuMax = 100;
-sigma = 0;
-
-tic
-figure; hold on;
-for j=1:numel(betas)
-    beta = betas(j);
-    disp(j);
-
-    for k=1:numel(N)
-        n = N(k);
-        disp(n);
-        [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0);
-        specInt = tril(1./(W.^2 - K.^2) .* (abs(Bnk).^2 + abs(eta0Dnk).^2));
-        Energy(j,k) = 0.5*(2*pi)^3 * trapz(omega, omega .* trapz(domega, specInt, 2).');
-    end
-    
-    plot(N, Energy(j,:), '--o', 'LineWidth', 1);
-end
-toc
-
-set(gca, 'YScale', 'log');
-xlabel('$N$', 'FontSize', 14, 'Interpreter', 'latex');
-ylabel('$\bar{W}$', 'FontSize', 14, 'Interpreter', 'latex');

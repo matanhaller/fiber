@@ -3,5 +3,7 @@
 *.jpg
 *.gif
 *.png
+*.txt
+*.asv
 *.MATLABDriveTag
-Final/Sanity Checks/*
+Final/*

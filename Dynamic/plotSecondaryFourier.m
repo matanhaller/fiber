@@ -21,7 +21,7 @@ n = -7;
 nuMax = 100;
 
 %% Plotting Fourier components
-close all;
+% close all;
 
 sigma = 0.0;
 nuMax = 100;
@@ -29,11 +29,11 @@ epsilon = 12;
 eps = 1e-1;
 
 y0 = 1.05;
-rho = 0.95;
+rho = 0.1;
 
 Mw = 4e2; Mk = 4e2;
 
-omegaMax = 20;
+omegaMax = 10;
 kzMax = 20;
 omega = linspace(-omegaMax, omegaMax, Mw);
 kz = linspace(-kzMax, kzMax, Mk);
@@ -41,7 +41,7 @@ kz = linspace(-kzMax, kzMax, Mk);
 
 tic;
 
-beta = 0.99;
+beta = 0.2;
 
 AnkSum = zeros((size(W)));
 BnkSum = zeros((size(W)));
@@ -54,7 +54,7 @@ eta0HzFourierSum = zeros(size(W));
 eta0HphiFourierSum = zeros(size(W));
 eta0HrhoFourierSum = zeros(size(W));
 
-for n=-3
+for n=0
     disp(n);
     [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, K, W, x0, y0, z0, beta, epsilon, nuMax, sigma, 0, eps);
    
@@ -64,7 +64,9 @@ for n=-3
     eta0HzFourier = eta0HzSecondaryFourier(eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
     eta0HphiFourier = eta0HphiSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
     eta0HrhoFourier = eta0HrhoSecondaryFourier(Ank, Bnk, eta0Cnk, eta0Dnk, rho, n, K, W, epsilon, eps);
-%     eta0HzFourier(abs(eta0HzFourier) > 0.37) = 0;
+
+%     eta0HzFourier(filterIdx) = 0;
+    
     AnkSum = AnkSum + Ank;
     BnkSum = BnkSum + Bnk;
     eta0CnkSum = eta0CnkSum + eta0Cnk;

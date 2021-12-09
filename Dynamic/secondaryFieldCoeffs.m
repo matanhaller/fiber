@@ -27,11 +27,13 @@ function [Ank, Bnk, eta0Cnk, eta0Dnk] = secondaryFieldCoeffs(n, kz, omega, x0, y
     K = besselk(n, kVac);
     Kp = besselkp(n, kVac);
 
+    lambda = 1e-3; % Regularization term
+
     % Matrix elements
-    M11 = 1j*omega.*(epsilon.*Ip./kCyl - (Kp./K).*I./kVac);
+    M11 = 1j*omega.*(epsilon.*Ip./kCyl - (Kp./K).*I./kVac) + lambda;
     M12 = n.*kz.*(1./(kCyl.^2) - 1./(kVac.^2)) .* I;
     M21 = M12;
-    M22 = -1j*omega.*(Ip./kCyl - (Kp./K).*I./kVac);
+    M22 = -1j*omega.*(Ip./kCyl - (Kp./K).*I./kVac) + lambda;
     
     % Matrix determinant
     Delta = M11 .* M22 - M12 .* M21;
